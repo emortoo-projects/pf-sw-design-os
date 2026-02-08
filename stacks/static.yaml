@@ -1,0 +1,41 @@
+name: Static
+description: >
+  Simple HTML, CSS, and vanilla JavaScript.
+  Best for landing pages, prototypes, and lightweight tools.
+
+languages:
+  - HTML
+  - CSS
+  - JavaScript
+
+frontend:
+  framework: None (vanilla)
+  bundler: None
+  styling: CSS (or Tailwind via CDN)
+  components: None
+
+backend:
+  runtime: None
+  notes: >
+    Static sites have no backend. If dynamic behavior is needed,
+    use a third-party API or upgrade to a full-stack stack.
+
+tooling:
+  package_manager: None
+  linter: Optional (ESLint)
+  formatter: Optional (Prettier)
+  test_runner: None
+
+structure:
+  src/:
+    - index.html       # Main page
+    - css/             # Stylesheets
+    - js/              # Scripts
+    - assets/          # Images, fonts, icons
+
+conventions:
+  - Keep it simple — no build step required
+  - Use semantic HTML
+  - Mobile-responsive by default
+  - Inline critical CSS for fast load
+  - Progressive enhancement over JavaScript dependency

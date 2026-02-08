@@ -1,0 +1,6 @@
+name: "{{PROJECT_NAME}}"
+description: "{{PROJECT_DESCRIPTION}}"
+stack: "{{PROJECT_STACK}}"
+status: planning
+created: "{{CREATED_DATE}}"
+updated: "{{CREATED_DATE}}"

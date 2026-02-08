@@ -1,0 +1,40 @@
+# Secrets & credentials
+**/secrets/
+**/.env
+**/.env.*
+!**/.env.example
+
+# Memory & logs (project-specific, not shared)
+**/memory/logs/
+**/memory/brain.db
+
+# Database files
+**/database/
+**/*.db
+**/*.sqlite
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test artifacts
+**/test-app/

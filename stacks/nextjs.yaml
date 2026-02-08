@@ -1,0 +1,45 @@
+name: Next.js
+description: >
+  Full-stack web application with Next.js App Router.
+  Best for SEO-friendly sites, dashboards, and SaaS products.
+
+languages:
+  - TypeScript
+
+frontend:
+  framework: Next.js (App Router)
+  bundler: Built-in (Turbopack)
+  styling: Tailwind CSS
+  components: Shadcn/UI
+  init: npx create-next-app@latest --typescript --tailwind --app
+
+backend:
+  runtime: Node.js
+  framework: Next.js API Routes / Server Actions
+  database: PostgreSQL (via Prisma)
+  deployment: Vercel
+
+tooling:
+  package_manager: npm
+  linter: ESLint
+  formatter: Prettier
+  test_runner: Jest or Vitest
+
+structure:
+  src/:
+    - app/             # App Router pages and layouts
+    - components/      # Shared React components
+    - lib/             # Utilities, database client, helpers
+    - prisma/          # Database schema and migrations
+    - public/          # Static assets
+    - package.json
+    - next.config.ts
+    - tailwind.config.ts
+    - tsconfig.json
+
+conventions:
+  - Use Server Components by default, Client Components only when needed
+  - Data fetching in Server Components or Server Actions
+  - API routes for webhook handlers and external integrations
+  - Prisma for all database operations
+  - Environment variables in .env.local (gitignored)

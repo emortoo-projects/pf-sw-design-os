@@ -1,0 +1,46 @@
+name: Python + FastAPI
+description: >
+  Python backend with FastAPI framework.
+  Best for API services, data pipelines, and ML-powered applications.
+
+languages:
+  - Python
+
+frontend:
+  framework: null  # API-only, or pair with a separate frontend project
+  notes: >
+    If a UI is needed, create a separate project with a frontend stack
+    and point it at this API.
+
+backend:
+  runtime: Python 3.11+
+  framework: FastAPI
+  database: PostgreSQL (via SQLAlchemy) or SQLite
+  deployment: Docker / Cloud Run / Railway
+
+tooling:
+  package_manager: pip + requirements.txt (or Poetry)
+  linter: Ruff
+  formatter: Ruff
+  test_runner: pytest
+  type_checker: mypy
+
+structure:
+  src/:
+    - app/
+    -   main.py        # FastAPI app entry point
+    -   routers/       # API route modules
+    -   models/        # SQLAlchemy / Pydantic models
+    -   services/      # Business logic
+    -   core/          # Config, dependencies, security
+    - tests/           # Test files
+    - requirements.txt
+    - Dockerfile
+    - .env.example
+
+conventions:
+  - Use Pydantic models for all request/response schemas
+  - Dependency injection for database sessions and auth
+  - Async endpoints where possible
+  - All settings via environment variables (pydantic-settings)
+  - Alembic for database migrations

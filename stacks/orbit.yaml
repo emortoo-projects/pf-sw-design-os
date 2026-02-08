@@ -1,0 +1,48 @@
+name: Orbit
+description: >
+  React + Vite + TypeScript frontend with Google Apps Script backend.
+  Best for Google Workspace-integrated apps (Sheets, Drive, Gmail).
+
+languages:
+  - TypeScript
+  - JavaScript (Apps Script)
+
+frontend:
+  framework: React
+  bundler: Vite
+  styling: Tailwind CSS
+  components: Shadcn/UI
+  init: npx shadcn@latest init
+
+backend:
+  runtime: Google Apps Script
+  database: Google Sheets
+  deployment: clasp push
+
+tooling:
+  package_manager: npm
+  linter: ESLint
+  formatter: Prettier
+  test_runner: Vitest
+
+structure:
+  src/frontend/:
+    - src/           # React components and pages
+    - public/        # Static assets
+    - tailwind.config.ts
+    - vite.config.ts
+    - tsconfig.json
+    - package.json
+  src/backend/:
+    - Code.gs        # Main Apps Script entry
+    - appsscript.json
+    - .clasp.json
+
+conventions:
+  - Use typed bridge.ts for client-server communication
+  - Shadcn components go in src/frontend/src/components/ui/
+  - All API calls route through bridge functions, never direct fetch
+  - Use Google Sheets as database via Apps Script
+  - Mobile-first responsive design (70% mobile users)
+  - Minimum touch target: h-10
+  - Use rounded-xl for friendly aesthetic
