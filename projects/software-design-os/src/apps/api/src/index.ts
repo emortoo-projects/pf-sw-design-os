@@ -10,6 +10,9 @@ import { userRoutes } from './routes/users'
 import { projects } from './routes/projects'
 import { templateRoutes } from './routes/templates'
 import { stageRoutes } from './routes/stages'
+import { aiProviderRoutes } from './routes/ai-providers'
+import { usageRoutes } from './routes/usage'
+import { mcpTokenRoutes, mcpTokenUserRoutes } from './routes/mcp-tokens'
 import type { AppEnv } from './types'
 
 const app = new Hono<AppEnv>()
@@ -28,6 +31,10 @@ app.route('/api/users', userRoutes)
 app.route('/api/projects', projects)
 app.route('/api/templates', templateRoutes)
 app.route('/api/projects/:projectId/stages', stageRoutes)
+app.route('/api/ai-providers', aiProviderRoutes)
+app.route('/api/usage', usageRoutes)
+app.route('/api/projects/:projectId/mcp-tokens', mcpTokenRoutes)
+app.route('/api/mcp-tokens', mcpTokenUserRoutes)
 
 // Health check with DB ping
 app.get('/api/health', async (c) => {

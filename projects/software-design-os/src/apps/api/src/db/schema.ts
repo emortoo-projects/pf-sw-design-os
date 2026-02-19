@@ -16,7 +16,14 @@ import {
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 
-export const providerTypeEnum = pgEnum('provider_type', ['anthropic', 'openai', 'custom'])
+export const providerTypeEnum = pgEnum('provider_type', [
+  'anthropic',
+  'openai',
+  'openrouter',
+  'deepseek',
+  'kimi',
+  'custom',
+])
 export const projectStatusEnum = pgEnum('project_status', ['active', 'archived', 'deleted'])
 export const stageStatusEnum = pgEnum('stage_status', [
   'locked',
@@ -211,6 +218,7 @@ export const mcpTokens = pgTable(
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
     tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    tokenPrefix: varchar('token_prefix', { length: 16 }).notNull(),
     label: varchar('label', { length: 255 }).notNull(),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
     expiresAt: timestamp('expires_at', { withTimezone: true }),

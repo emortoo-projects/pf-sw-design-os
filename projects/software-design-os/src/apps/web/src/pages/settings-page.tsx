@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
+import { apiClient } from '@/lib/api-client'
 import {
   SettingsTabs,
   ProfileSettings,
@@ -7,24 +10,31 @@ import {
   UsageStats,
   CostAlertConfig,
   createMockUserProfile,
-  createMockProviders,
-  createMockTokens,
-  createMockUsageSummary,
-  createMockCostAlertConfig,
   type SettingsTab,
   type UserProfile,
-  type AIProviderConfig,
-  type MCPToken,
   type CostAlertConfigType,
+  type UsagePeriod,
 } from '@/features/settings'
+import { useUsageSummary, useSaveCostAlerts } from '@/hooks/use-usage'
+
+const DEFAULT_COST_ALERTS: CostAlertConfigType = {
+  monthlyBudget: 25,
+  warningThreshold: 80,
+  emailNotifications: true,
+}
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile')
   const [profile, setProfile] = useState<UserProfile>(createMockUserProfile)
-  const [providers, setProviders] = useState<AIProviderConfig[]>(createMockProviders)
-  const [tokens, setTokens] = useState<MCPToken[]>(createMockTokens)
-  const [usage] = useState(createMockUsageSummary)
-  const [costAlerts, setCostAlerts] = useState<CostAlertConfigType>(createMockCostAlertConfig)
+  const [period, setPeriod] = useState<UsagePeriod>('30d')
+
+  const { data: usage, isLoading: usageLoading } = useUsageSummary(period)
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => apiClient.getMe() })
+  const saveCostAlerts = useSaveCostAlerts()
+
+  const costAlerts: CostAlertConfigType =
+    (me?.preferences as Record<string, unknown>)?.costAlerts as CostAlertConfigType
+    ?? DEFAULT_COST_ALERTS
 
   return (
     <div className="space-y-6">
@@ -41,17 +51,23 @@ export function SettingsPage() {
         )}
 
         {activeTab === 'providers' && (
-          <AIProviderManager providers={providers} onChange={setProviders} />
+          <AIProviderManager />
         )}
 
         {activeTab === 'mcp' && (
-          <MCPTokenManager tokens={tokens} onChange={setTokens} />
+          <MCPTokenManager />
         )}
 
         {activeTab === 'usage' && (
           <div className="space-y-6">
-            <UsageStats usage={usage} onPeriodChange={() => { /* Mock — would re-fetch data */ }} />
-            <CostAlertConfig config={costAlerts} onChange={setCostAlerts} />
+            {usageLoading || !usage ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+              </div>
+            ) : (
+              <UsageStats usage={usage} onPeriodChange={setPeriod} />
+            )}
+            <CostAlertConfig config={costAlerts} onChange={(c) => saveCostAlerts.mutate(c)} />
           </div>
         )}
       </div>

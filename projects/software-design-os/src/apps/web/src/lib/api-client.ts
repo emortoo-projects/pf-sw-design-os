@@ -4,10 +4,12 @@ import type {
   GenerateResponse,
   CompleteResponse,
   RevertResponse,
+  ActivateOutputResponse,
   Stage,
   User,
   AuthResponse,
 } from '@sdos/shared'
+import type { UsageSummary, UsagePeriod } from '@/features/settings/types'
 
 export interface CreateProjectInput {
   name: string
@@ -32,6 +34,64 @@ export interface Template {
   createdAt: string
 }
 
+export type ProviderType = 'anthropic' | 'openai' | 'openrouter' | 'deepseek' | 'kimi' | 'custom'
+
+export interface AIProvider {
+  id: string
+  userId: string
+  provider: ProviderType
+  label: string
+  defaultModel: string
+  baseUrl: string | null
+  isDefault: boolean
+  apiKeySet: boolean
+  createdAt: string
+}
+
+export interface CreateAIProviderInput {
+  provider: ProviderType
+  label: string
+  apiKey: string
+  defaultModel: string
+  baseUrl?: string
+  isDefault?: boolean
+}
+
+export interface UpdateAIProviderInput {
+  label?: string
+  apiKey?: string
+  defaultModel?: string
+  baseUrl?: string | null
+  isDefault?: boolean
+}
+
+export interface TestConnectionResult {
+  success: boolean
+  model: string
+  latencyMs: number
+  error?: string
+}
+
+export interface MCPTokenResponse {
+  id: string
+  label: string
+  projectId: string
+  projectName: string
+  tokenPrefix: string
+  lastUsedAt: string | null
+  expiresAt: string
+  createdAt: string
+}
+
+export interface MCPTokenCreateResponse extends MCPTokenResponse {
+  plaintext: string
+}
+
+export interface CreateMCPTokenInput {
+  label: string
+  expiresInDays?: number
+}
+
 export interface ApiClient {
   listProjects(): Promise<ProjectWithStages[]>
   createProject(input: CreateProjectInput): Promise<ProjectWithStages>
@@ -44,12 +104,22 @@ export interface ApiClient {
   generateStage(projectId: string, stageNumber: number, userInput?: string): Promise<GenerateResponse>
   completeStage(projectId: string, stageNumber: number): Promise<CompleteResponse>
   revertStage(projectId: string, stageNumber: number): Promise<RevertResponse>
+  activateOutputVersion(projectId: string, stageNumber: number, version: number): Promise<ActivateOutputResponse>
   login(email: string, password: string): Promise<AuthResponse>
   register(email: string, name: string, password: string): Promise<AuthResponse>
   refreshAuth(refreshToken: string): Promise<AuthResponse>
   logout(refreshToken: string): Promise<void>
   getMe(): Promise<User>
   updateMe(data: { name?: string; avatarUrl?: string | null; preferences?: Record<string, unknown> }): Promise<User>
+  listAIProviders(): Promise<AIProvider[]>
+  createAIProvider(input: CreateAIProviderInput): Promise<AIProvider>
+  updateAIProvider(id: string, input: UpdateAIProviderInput): Promise<AIProvider>
+  deleteAIProvider(id: string): Promise<void>
+  testAIProvider(id: string): Promise<TestConnectionResult>
+  getUsageSummary(period: UsagePeriod): Promise<UsageSummary>
+  listMCPTokens(): Promise<MCPTokenResponse[]>
+  createMCPToken(projectId: string, input: CreateMCPTokenInput): Promise<MCPTokenCreateResponse>
+  deleteMCPToken(projectId: string, tokenId: string): Promise<void>
 }
 
 // Prevent concurrent refresh attempts
@@ -180,6 +250,60 @@ class HttpApiClient implements ApiClient {
     })
   }
 
+  activateOutputVersion(projectId: string, stageNumber: number, version: number) {
+    return this.fetch<ActivateOutputResponse>(
+      `/projects/${projectId}/stages/${stageNumber}/outputs/${version}/activate`,
+      { method: 'POST' },
+    )
+  }
+
+  listAIProviders() {
+    return this.fetch<AIProvider[]>('/ai-providers')
+  }
+
+  createAIProvider(input: CreateAIProviderInput) {
+    return this.fetch<AIProvider>('/ai-providers', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+  }
+
+  updateAIProvider(id: string, input: UpdateAIProviderInput) {
+    return this.fetch<AIProvider>(`/ai-providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    })
+  }
+
+  async deleteAIProvider(id: string) {
+    await this.fetch(`/ai-providers/${id}`, { method: 'DELETE' })
+  }
+
+  testAIProvider(id: string) {
+    return this.fetch<TestConnectionResult>(`/ai-providers/${id}/test`, {
+      method: 'POST',
+    })
+  }
+
+  getUsageSummary(period: UsagePeriod) {
+    return this.fetch<UsageSummary>(`/usage?period=${period}`)
+  }
+
+  listMCPTokens() {
+    return this.fetch<MCPTokenResponse[]>('/mcp-tokens')
+  }
+
+  createMCPToken(projectId: string, input: CreateMCPTokenInput) {
+    return this.fetch<MCPTokenCreateResponse>(`/projects/${projectId}/mcp-tokens`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+  }
+
+  async deleteMCPToken(projectId: string, tokenId: string) {
+    await this.fetch(`/projects/${projectId}/mcp-tokens/${tokenId}`, { method: 'DELETE' })
+  }
+
   async login(email: string, password: string) {
     const res = await fetch(`${this.baseUrl}/auth/login`, {
       method: 'POST',
@@ -297,6 +421,76 @@ class MockApiClient implements ApiClient {
     const { createMockRevertResponse } = await this.data
     return createMockRevertResponse(stageNumber)
   }
+
+  async activateOutputVersion(_projectId: string, stageNumber: number, version: number): Promise<ActivateOutputResponse> {
+    const { createMockStage } = await this.data
+    const stage = createMockStage(stageNumber, 'review')
+    return {
+      stage,
+      output: {
+        id: `output-${stageNumber}-${version}`,
+        stageId: stage.id,
+        version,
+        format: 'json',
+        content: JSON.stringify(stage.data ?? {}),
+        generatedBy: 'ai',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      },
+    }
+  }
+
+  async listAIProviders(): Promise<AIProvider[]> {
+    return [
+      { id: 'prov-1', userId: 'mock-user', provider: 'anthropic', label: 'Claude (Primary)', defaultModel: 'claude-sonnet-4-5-20250929', baseUrl: null, isDefault: true, apiKeySet: true, createdAt: new Date().toISOString() },
+      { id: 'prov-2', userId: 'mock-user', provider: 'openai', label: 'OpenAI Fallback', defaultModel: 'gpt-4o', baseUrl: null, isDefault: false, apiKeySet: true, createdAt: new Date().toISOString() },
+    ]
+  }
+
+  async createAIProvider(input: CreateAIProviderInput): Promise<AIProvider> {
+    return { id: `prov-${Date.now()}`, userId: 'mock-user', provider: input.provider, label: input.label, defaultModel: input.defaultModel, baseUrl: input.baseUrl ?? null, isDefault: input.isDefault ?? false, apiKeySet: true, createdAt: new Date().toISOString() }
+  }
+
+  async updateAIProvider(id: string, input: UpdateAIProviderInput): Promise<AIProvider> {
+    return { id, userId: 'mock-user', provider: 'anthropic', label: input.label ?? 'Provider', defaultModel: input.defaultModel ?? 'claude-sonnet-4-5-20250929', baseUrl: null, isDefault: input.isDefault ?? false, apiKeySet: true, createdAt: new Date().toISOString() }
+  }
+
+  async deleteAIProvider(_id: string): Promise<void> {}
+
+  async testAIProvider(_id: string): Promise<TestConnectionResult> {
+    await new Promise((r) => setTimeout(r, 1500))
+    return { success: true, model: 'claude-sonnet-4-5-20250929', latencyMs: 1200 }
+  }
+
+  async getUsageSummary(_period: UsagePeriod): Promise<UsageSummary> {
+    const { createMockUsageSummary } = await import('@/features/settings/types')
+    return createMockUsageSummary()
+  }
+
+  async listMCPTokens(): Promise<MCPTokenResponse[]> {
+    const now = Date.now()
+    return [
+      { id: 'token-1', label: 'CI/CD Pipeline', projectId: 'mock-project-1', projectName: 'Software Design OS', tokenPrefix: 'sdp_live_abc1', lastUsedAt: new Date(now - 2 * 86400000).toISOString(), expiresAt: new Date(now + 335 * 86400000).toISOString(), createdAt: new Date(now - 30 * 86400000).toISOString() },
+      { id: 'token-2', label: 'Development', projectId: 'mock-project-2', projectName: 'E-Commerce Platform', tokenPrefix: 'sdp_live_xyz2', lastUsedAt: null, expiresAt: new Date(now + 351 * 86400000).toISOString(), createdAt: new Date(now - 14 * 86400000).toISOString() },
+    ]
+  }
+
+  async createMCPToken(_projectId: string, input: CreateMCPTokenInput): Promise<MCPTokenCreateResponse> {
+    const now = new Date()
+    return {
+      id: `token-${Date.now()}`,
+      label: input.label,
+      projectId: _projectId,
+      projectName: 'Mock Project',
+      tokenPrefix: 'sdp_live_mock',
+      lastUsedAt: null,
+      expiresAt: new Date(now.getTime() + (input.expiresInDays ?? 365) * 86400000).toISOString(),
+      createdAt: now.toISOString(),
+      plaintext: `sdp_live_${crypto.randomUUID().replace(/-/g, '')}mock1234567890ab`,
+    }
+  }
+
+  async deleteMCPToken(_projectId: string, _tokenId: string): Promise<void> {}
 
   async login(_email: string, _password: string): Promise<AuthResponse> {
     return {

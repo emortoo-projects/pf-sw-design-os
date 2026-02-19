@@ -1,14 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { Key, Plus, Trash2, Copy, Check, AlertTriangle } from 'lucide-react'
+import { Key, Plus, Trash2, Copy, Check, AlertTriangle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import type { MCPToken } from './types'
-import { generateSettingsId } from './types'
-
-interface MCPTokenManagerProps {
-  tokens: MCPToken[]
-  onChange: (tokens: MCPToken[]) => void
-}
+import { useMCPTokens, useCreateMCPToken, useDeleteMCPToken } from '@/hooks/use-mcp-tokens'
+import { useProjects } from '@/hooks/use-projects'
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -18,19 +13,16 @@ function formatDate(dateStr: string): string {
   })
 }
 
-function generateTokenPrefix(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-  let suffix = ''
-  for (let i = 0; i < 4; i++) {
-    suffix += chars[Math.floor(Math.random() * chars.length)]
-  }
-  return `sdp_live_${suffix}`
-}
+export function MCPTokenManager() {
+  const { data: tokens, isLoading } = useMCPTokens()
+  const { data: projects } = useProjects()
+  const createToken = useCreateMCPToken()
+  const deleteToken = useDeleteMCPToken()
 
-export function MCPTokenManager({ tokens, onChange }: MCPTokenManagerProps) {
   const [createOpen, setCreateOpen] = useState(false)
-  const [revokeId, setRevokeId] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<{ tokenId: string; projectId: string; label: string } | null>(null)
   const [newLabel, setNewLabel] = useState('')
+  const [selectedProjectId, setSelectedProjectId] = useState('')
   const [newlyCreatedToken, setNewlyCreatedToken] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -41,30 +33,31 @@ export function MCPTokenManager({ tokens, onChange }: MCPTokenManagerProps) {
     }
   }, [])
 
-  const activeTokens = tokens.filter((t) => !t.revoked)
+  // Auto-select first project when projects load
+  useEffect(() => {
+    if (projects?.length && !selectedProjectId) {
+      setSelectedProjectId(projects[0].id)
+    }
+  }, [projects, selectedProjectId])
 
   function handleCreate() {
-    if (!newLabel.trim()) return
-    const fullToken = `${generateTokenPrefix()}_${crypto.randomUUID().replace(/-/g, '').slice(0, 32)}`
-    const token: MCPToken = {
-      id: generateSettingsId('tok'),
-      label: newLabel.trim(),
-      projectId: 'mock-project-1',
-      projectName: 'Software Design OS',
-      tokenPrefix: fullToken.slice(0, 13),
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
-      revoked: false,
-    }
-    onChange([...tokens, token])
-    setNewlyCreatedToken(fullToken)
-    setNewLabel('')
+    if (!newLabel.trim() || !selectedProjectId) return
+    createToken.mutate(
+      { projectId: selectedProjectId, label: newLabel.trim() },
+      {
+        onSuccess: (data) => {
+          setNewlyCreatedToken(data.plaintext)
+          setNewLabel('')
+        },
+      },
+    )
   }
 
   function handleCloseCreate() {
     setCreateOpen(false)
     setNewlyCreatedToken(null)
     setNewLabel('')
+    setSelectedProjectId(projects?.[0]?.id ?? '')
   }
 
   async function handleCopyToken() {
@@ -79,13 +72,23 @@ export function MCPTokenManager({ tokens, onChange }: MCPTokenManagerProps) {
     }
   }
 
-  function handleRevoke() {
-    if (!revokeId) return
-    onChange(tokens.map((t) => (t.id === revokeId ? { ...t, revoked: true } : t)))
-    setRevokeId(null)
+  function handleDelete() {
+    if (!deleteId) return
+    deleteToken.mutate(
+      { projectId: deleteId.projectId, tokenId: deleteId.tokenId },
+      { onSuccess: () => setDeleteId(null) },
+    )
   }
 
-  const tokenToRevoke = tokens.find((t) => t.id === revokeId)
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+      </div>
+    )
+  }
+
+  const tokenList = tokens ?? []
 
   return (
     <div className="space-y-4">
@@ -100,7 +103,7 @@ export function MCPTokenManager({ tokens, onChange }: MCPTokenManagerProps) {
         </Button>
       </div>
 
-      {activeTokens.length === 0 ? (
+      {tokenList.length === 0 ? (
         <div className="rounded-lg border-2 border-dashed border-zinc-200 py-8 text-center">
           <Key className="mx-auto h-8 w-8 text-zinc-300" />
           <p className="mt-2 text-sm text-zinc-500">No MCP tokens created</p>
@@ -120,7 +123,7 @@ export function MCPTokenManager({ tokens, onChange }: MCPTokenManagerProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {activeTokens.map((token) => (
+              {tokenList.map((token) => (
                 <tr key={token.id} className="bg-white">
                   <td className="px-4 py-2.5 font-medium text-zinc-900">{token.label}</td>
                   <td className="px-4 py-2.5 text-zinc-500">{token.projectName}</td>
@@ -138,7 +141,7 @@ export function MCPTokenManager({ tokens, onChange }: MCPTokenManagerProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setRevokeId(token.id)}
+                      onClick={() => setDeleteId({ tokenId: token.id, projectId: token.projectId, label: token.label })}
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -185,6 +188,19 @@ export function MCPTokenManager({ tokens, onChange }: MCPTokenManagerProps) {
         ) : (
           <div className="mt-4 space-y-4">
             <div>
+              <label htmlFor="tok-project" className="text-sm font-medium text-zinc-700">Project</label>
+              <select
+                id="tok-project"
+                value={selectedProjectId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                className="mt-1 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                {(projects ?? []).map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label htmlFor="tok-label" className="text-sm font-medium text-zinc-700">Token Label</label>
               <input
                 id="tok-label"
@@ -198,23 +214,30 @@ export function MCPTokenManager({ tokens, onChange }: MCPTokenManagerProps) {
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={handleCloseCreate}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={!newLabel.trim()}>Create Token</Button>
+              <Button
+                onClick={handleCreate}
+                disabled={!newLabel.trim() || !selectedProjectId || createToken.isPending}
+              >
+                {createToken.isPending ? 'Creating...' : 'Create Token'}
+              </Button>
             </DialogFooter>
           </div>
         )}
       </Dialog>
 
-      {/* Revoke Confirmation Dialog */}
-      <Dialog open={!!revokeId} onOpenChange={() => setRevokeId(null)}>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <DialogHeader>
-          <DialogTitle>Revoke Token</DialogTitle>
+          <DialogTitle>Delete Token</DialogTitle>
           <DialogDescription>
-            Are you sure you want to revoke "{tokenToRevoke?.label}"? This action cannot be undone.
+            Are you sure you want to delete "{deleteId?.label}"? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-4">
-          <Button variant="ghost" onClick={() => setRevokeId(null)}>Cancel</Button>
-          <Button variant="destructive" onClick={handleRevoke}>Revoke Token</Button>
+          <Button variant="ghost" onClick={() => setDeleteId(null)}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={deleteToken.isPending}>
+            {deleteToken.isPending ? 'Deleting...' : 'Delete Token'}
+          </Button>
         </DialogFooter>
       </Dialog>
     </div>
