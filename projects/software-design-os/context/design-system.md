@@ -1,0 +1,269 @@
+# Design System
+
+## Colors
+
+### Primary
+- `50`: #f0f9ff
+- `100`: #e0f2fe
+- `200`: #bae6fd
+- `300`: #7dd3fc
+- `400`: #38bdf8
+- `500`: #0ea5e9
+- `600`: #0284c7
+- `700`: #0369a1
+- `800`: #075985
+- `900`: #0c4a6e
+- `950`: #082f49
+### Secondary
+- `50`: #fffbeb
+- `100`: #fef3c7
+- `200`: #fde68a
+- `300`: #fcd34d
+- `400`: #fbbf24
+- `500`: #f59e0b
+- `600`: #d97706
+- `700`: #b45309
+- `800`: #92400e
+- `900`: #78350f
+- `950`: #451a03
+### Neutral
+- `50`: #fafafa
+- `100`: #f4f4f5
+- `200`: #e4e4e7
+- `300`: #d4d4d8
+- `400`: #a1a1aa
+- `500`: #71717a
+- `600`: #52525b
+- `700`: #3f3f46
+- `800`: #27272a
+- `900`: #18181b
+- `950`: #09090b
+### Success
+- `50`: #ecfdf5
+- `500`: #10b981
+- `700`: #047857
+### Error
+- `50`: #fff1f2
+- `500`: #f43f5e
+- `700`: #be123c
+### Warning
+- `50`: #fffbeb
+- `500`: #f59e0b
+- `700`: #b45309
+
+
+## Typography
+
+- **heading**: {'fontFamily': 'Inter', 'weights': [600, 700]}
+- **body**: {'fontFamily': 'Inter', 'weights': [400, 500]}
+- **mono**: {'fontFamily': 'JetBrains Mono', 'weights': [400, 500]}
+- **scale**: {'xs': '0.75rem', 'sm': '0.875rem', 'base': '1rem', 'lg': '1.125rem', 'xl': '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem'}
+
+
+## Spacing
+
+```json
+{
+  "base": 4,
+  "scale": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    10,
+    12,
+    16,
+    20,
+    24,
+    32,
+    40,
+    48,
+    64
+  ]
+}
+```
+
+
+## Full Design Tokens
+
+```json
+{
+  "colors": {
+    "primary": {
+      "50": "#f0f9ff",
+      "100": "#e0f2fe",
+      "200": "#bae6fd",
+      "300": "#7dd3fc",
+      "400": "#38bdf8",
+      "500": "#0ea5e9",
+      "600": "#0284c7",
+      "700": "#0369a1",
+      "800": "#075985",
+      "900": "#0c4a6e",
+      "950": "#082f49"
+    },
+    "secondary": {
+      "50": "#fffbeb",
+      "100": "#fef3c7",
+      "200": "#fde68a",
+      "300": "#fcd34d",
+      "400": "#fbbf24",
+      "500": "#f59e0b",
+      "600": "#d97706",
+      "700": "#b45309",
+      "800": "#92400e",
+      "900": "#78350f",
+      "950": "#451a03"
+    },
+    "neutral": {
+      "50": "#fafafa",
+      "100": "#f4f4f5",
+      "200": "#e4e4e7",
+      "300": "#d4d4d8",
+      "400": "#a1a1aa",
+      "500": "#71717a",
+      "600": "#52525b",
+      "700": "#3f3f46",
+      "800": "#27272a",
+      "900": "#18181b",
+      "950": "#09090b"
+    },
+    "success": {
+      "50": "#ecfdf5",
+      "500": "#10b981",
+      "700": "#047857"
+    },
+    "error": {
+      "50": "#fff1f2",
+      "500": "#f43f5e",
+      "700": "#be123c"
+    },
+    "warning": {
+      "50": "#fffbeb",
+      "500": "#f59e0b",
+      "700": "#b45309"
+    }
+  },
+  "typography": {
+    "heading": {
+      "fontFamily": "Inter",
+      "weights": [
+        600,
+        700
+      ]
+    },
+    "body": {
+      "fontFamily": "Inter",
+      "weights": [
+        400,
+        500
+      ]
+    },
+    "mono": {
+      "fontFamily": "JetBrains Mono",
+      "weights": [
+        400,
+        500
+      ]
+    },
+    "scale": {
+      "xs": "0.75rem",
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem",
+      "4xl": "2.25rem"
+    }
+  },
+  "spacing": {
+    "base": 4,
+    "scale": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      10,
+      12,
+      16,
+      20,
+      24,
+      32,
+      40,
+      48,
+      64
+    ]
+  },
+  "borderRadius": {
+    "sm": "6px",
+    "md": "8px",
+    "lg": "12px",
+    "xl": "16px",
+    "full": "9999px"
+  },
+  "shadows": {
+    "sm": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    "md": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+    "lg": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)"
+  },
+  "applicationShell": {
+    "layout": "sidebar + main content",
+    "sidebar": {
+      "width": "260px",
+      "collapsedWidth": "64px",
+      "position": "left",
+      "collapsible": true,
+      "background": "neutral.900",
+      "textColor": "neutral.200"
+    },
+    "mainContent": {
+      "background": "neutral.50",
+      "maxWidth": "none",
+      "padding": "24px"
+    },
+    "navigation": [
+      {
+        "label": "Dashboard",
+        "icon": "Home",
+        "route": "/"
+      },
+      {
+        "label": "Projects",
+        "icon": "FolderOpen",
+        "route": "/projects"
+      },
+      {
+        "label": "Templates",
+        "icon": "LayoutTemplate",
+        "route": "/templates"
+      },
+      {
+        "label": "Usage",
+        "icon": "BarChart3",
+        "route": "/usage"
+      },
+      {
+        "label": "Settings",
+        "icon": "Settings",
+        "route": "/settings"
+      }
+    ]
+  },
+  "componentLibrary": "shadcn/ui",
+  "iconLibrary": "lucide-react"
+}
+```
+
+
+
+---
+*Imported from SDP on 2026-02-18 18:56*

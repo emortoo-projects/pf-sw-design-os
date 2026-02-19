@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-VALID_STACKS = ["orbit", "nextjs", "python-fastapi", "static"]
+VALID_STACKS = ["orbit", "nextjs", "python-fastapi", "static", "sdos"]
 
 
 def get_project_root():

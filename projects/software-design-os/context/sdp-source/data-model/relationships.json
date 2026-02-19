@@ -1,0 +1,16 @@
+{
+  "relationships": [
+    {"from": "User", "to": "Project", "type": "one-to-many", "foreignKey": "userId", "description": "A user owns many projects"},
+    {"from": "User", "to": "AIProviderConfig", "type": "one-to-many", "foreignKey": "userId", "description": "A user has multiple AI provider configs"},
+    {"from": "User", "to": "MCPToken", "type": "one-to-many", "foreignKey": "userId", "description": "A user manages MCP access tokens"},
+    {"from": "Project", "to": "Stage", "type": "one-to-many", "foreignKey": "projectId", "description": "A project has exactly 9 stages"},
+    {"from": "Project", "to": "ExportPackage", "type": "one-to-many", "foreignKey": "projectId", "description": "A project can have multiple exports"},
+    {"from": "Project", "to": "MCPToken", "type": "one-to-many", "foreignKey": "projectId", "description": "A project can have multiple MCP tokens"},
+    {"from": "Project", "to": "AIProviderConfig", "type": "many-to-one", "foreignKey": "aiProviderId", "description": "A project optionally overrides the AI provider"},
+    {"from": "Project", "to": "Template", "type": "many-to-one", "foreignKey": "templateId", "description": "A project may be created from a template"},
+    {"from": "Stage", "to": "StageOutput", "type": "one-to-many", "foreignKey": "stageId", "description": "A stage has versioned outputs"},
+    {"from": "Stage", "to": "AIGeneration", "type": "one-to-many", "foreignKey": "stageId", "description": "A stage tracks all AI generation calls"},
+    {"from": "StageOutput", "to": "AIGeneration", "type": "many-to-one", "foreignKey": "aiGenerationId", "description": "An AI-generated output links to its generation record"},
+    {"from": "AIGeneration", "to": "AIProviderConfig", "type": "many-to-one", "foreignKey": "providerId", "description": "Each generation uses a specific provider config"}
+  ]
+}

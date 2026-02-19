@@ -1,0 +1,362 @@
+# Skills Registry
+# Maps skills to their triggers and SKILL.md file paths.
+# Used by assign_skills.py to auto-assign skills to goals.
+
+skills:
+  frontend-design:
+    description: "React component design, Tailwind CSS, Shadcn/UI, responsive layouts"
+    path: null  # Use built-in Claude knowledge
+    triggers:
+      keywords:
+        - component
+        - layout
+        - sidebar
+        - navigation
+        - card
+        - modal
+        - grid
+        - responsive
+        - tailwind
+        - shadcn
+        - button
+        - form
+        - input
+        - table
+        - tabs
+        - toggle
+        - tooltip
+        - badge
+        - icon
+        - preview
+        - editor
+        - canvas
+        - drag
+        - tree
+        - swatch
+        - color picker
+        - font
+        - typography
+      goal_patterns:
+        - "build-.*"
+      section_types:
+        - "*"
+      file_types:
+        - ".tsx"
+        - ".css"
+
+  react-state:
+    description: "Zustand stores, TanStack Query, React state management"
+    path: null
+    triggers:
+      keywords:
+        - zustand
+        - store
+        - useQuery
+        - useMutation
+        - state
+        - stateManagement
+        - serverState
+        - clientState
+        - tanstack
+        - react-query
+        - cache
+        - optimistic
+      goal_patterns:
+        - "build-.*"
+      section_types:
+        - "*"
+      file_types:
+        - ".ts"
+        - ".tsx"
+
+  api:
+    description: "Hono API routes, REST endpoints, request/response handling"
+    path: null
+    triggers:
+      keywords:
+        - endpoint
+        - route
+        - api
+        - REST
+        - POST
+        - GET
+        - PUT
+        - DELETE
+        - fetch
+        - mutation
+        - auth
+        - jwt
+        - token
+        - middleware
+        - hono
+        - zod
+        - validation
+      goal_patterns:
+        - "build-api.*"
+        - "build-settings"
+        - "build-dashboard"
+        - "build-export.*"
+      file_types:
+        - "routes"
+        - "services"
+        - "middleware"
+
+  database:
+    description: "PostgreSQL, Drizzle ORM, schema design, migrations, JSONB"
+    path: null
+    triggers:
+      keywords:
+        - database
+        - schema
+        - table
+        - column
+        - index
+        - migration
+        - drizzle
+        - postgresql
+        - postgres
+        - jsonb
+        - gin
+        - uuid
+        - foreign key
+        - entity
+        - sql
+        - query
+        - orm
+      goal_patterns:
+        - "build-database.*"
+        - "build-data-model.*"
+      file_types:
+        - ".sql"
+        - "schema"
+        - "migration"
+
+  ai-integration:
+    description: "Anthropic SDK, Vercel AI SDK, LLM integration, prompt engineering"
+    path: null
+    triggers:
+      keywords:
+        - ai
+        - generation
+        - generate
+        - anthropic
+        - openai
+        - model
+        - prompt
+        - token
+        - cost
+        - provider
+        - llm
+        - claude
+        - streaming
+        - ai-powered
+      goal_patterns:
+        - "build-product-definition"
+        - "build-data-model.*"
+        - "build-database.*"
+        - "build-api-designer"
+        - "build-stack-selector"
+        - "build-design-system.*"
+        - "build-section-builder"
+        - "build-infrastructure.*"
+        - "build-settings"
+      file_types:
+        - "ai/"
+        - "providers"
+        - "prompts"
+
+  mcp:
+    description: "Model Context Protocol server, MCP tools, token management"
+    path: null
+    triggers:
+      keywords:
+        - mcp
+        - model context protocol
+        - mcp token
+        - mcp server
+        - mcp tools
+        - bearer token
+        - tool
+      goal_patterns:
+        - "build-settings"
+        - "build-export.*"
+      file_types:
+        - "mcp/"
+
+  export-packaging:
+    description: "SDP export, zip generation, file tree assembly, validation"
+    path: null
+    triggers:
+      keywords:
+        - export
+        - package
+        - zip
+        - download
+        - validation
+        - cross-reference
+        - manifest
+        - sdp
+        - file tree
+        - assemble
+      goal_patterns:
+        - "build-export.*"
+      file_types:
+        - "export"
+
+  design-tokens:
+    description: "Design system tokens, color palettes, typography, spacing, shadows"
+    path: null
+    triggers:
+      keywords:
+        - design system
+        - token
+        - color
+        - palette
+        - typography
+        - spacing
+        - border radius
+        - shadow
+        - theme
+        - swatch
+        - font
+        - app shell
+      goal_patterns:
+        - "build-design-system.*"
+      file_types:
+        - "tokens"
+        - "design"
+
+  docker:
+    description: "Docker, docker-compose, containerization, multi-service orchestration"
+    path: null
+    triggers:
+      keywords:
+        - docker
+        - container
+        - compose
+        - dockerfile
+        - image
+        - service
+        - port
+        - volume
+        - environment
+        - deploy
+      goal_patterns:
+        - "build-infrastructure.*"
+      file_types:
+        - "docker"
+        - "Dockerfile"
+
+  ci-cd:
+    description: "GitHub Actions, CI/CD pipelines, automated testing and deployment"
+    path: null
+    triggers:
+      keywords:
+        - ci
+        - cd
+        - pipeline
+        - github actions
+        - deploy
+        - build
+        - test
+        - lint
+        - typecheck
+      goal_patterns:
+        - "build-infrastructure.*"
+      file_types:
+        - ".yml"
+        - "ci"
+
+  auth:
+    description: "JWT authentication, authorization, password hashing, session management"
+    path: null
+    triggers:
+      keywords:
+        - auth
+        - login
+        - register
+        - jwt
+        - token
+        - password
+        - bcrypt
+        - session
+        - refresh token
+        - authorization
+        - protected
+        - middleware
+      goal_patterns:
+        - "build-settings"
+        - "build-api-designer"
+      file_types:
+        - "auth"
+
+  data-visualization:
+    description: "Charts, graphs, statistics, usage dashboards, cost tracking"
+    path: null
+    triggers:
+      keywords:
+        - chart
+        - graph
+        - stats
+        - statistics
+        - usage
+        - cost
+        - breakdown
+        - pie chart
+        - bar chart
+        - line chart
+        - trend
+        - aggregate
+        - progress bar
+      goal_patterns:
+        - "build-settings"
+        - "build-dashboard"
+      file_types: []
+
+  monorepo:
+    description: "pnpm workspaces, monorepo structure, shared packages"
+    path: null
+    triggers:
+      keywords:
+        - monorepo
+        - workspace
+        - pnpm
+        - package
+        - shared
+        - packages
+      goal_patterns:
+        - "build-pipeline"
+        - "build-infrastructure.*"
+      file_types:
+        - "pnpm-workspace"
+        - "package.json"
+
+composites:
+  full-stack-section:
+    description: "Full-stack feature requiring frontend, API, and database work"
+    triggers:
+      - "build-dashboard"
+      - "build-settings"
+      - "build-export"
+    skills:
+      - frontend-design
+      - react-state
+      - api
+      - database
+
+  pipeline-stage-editor:
+    description: "A pipeline stage editor with AI generation, data editing, and dual-view"
+    triggers:
+      - "build-product-definition"
+      - "build-data-model"
+      - "build-database-designer"
+      - "build-api-designer"
+      - "build-stack-selector"
+      - "build-design-system"
+      - "build-section-builder"
+      - "build-infrastructure-config"
+    skills:
+      - frontend-design
+      - react-state
+      - ai-integration
+      - api

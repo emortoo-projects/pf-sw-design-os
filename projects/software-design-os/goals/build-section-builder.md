@@ -1,0 +1,144 @@
+---
+title: Build Section Builder
+status: not-started
+priority: medium
+created: 2026-02-18
+source: sdp-import
+skills:
+- frontend-design
+- ai-integration
+- api
+- ci-cd
+- react-state
+- design-tokens
+skill_paths: []
+skills_assigned: '2026-02-18'
+---
+
+# Build Section Builder
+
+Stage 7 editor. The most detailed stage — specify each screen/page with component hierarchy, data requirements, interactions, and state management. One tab per section, with AI generating the initial spec for each.
+
+## Acceptance Criteria
+
+- [ ] SectionTabs is implemented and functional — Horizontal tab bar showing all sections identified in the product definition. Each tab has the section name and a status badge (empty/generated/edited). Add Section button at the end.
+- [ ] ComponentTreeEditor is implemented and functional — Visual tree editor for the section's component hierarchy. Each node shows component name, description, and props. Drag to reorder. Indent to nest. Add/remove nodes.
+- [ ] DataRequirements is implemented and functional — Checklist of entities this section uses. Auto-suggested from component props. Shows which fields from each entity are needed.
+- [ ] InteractionEditor is implemented and functional — List of trigger→behavior pairs defining user interactions for this section. Add/edit/remove. AI generates initial interactions from component descriptions.
+- [ ] StateManagementNotes is implemented and functional — Text area for server state (API queries) and client state (local UI state) notes. AI pre-fills based on components and data requirements.
+- [ ] SectionPreview is implemented and functional — Mockup preview of the section layout using design tokens from Stage 6. Shows component boxes with names, arranged in a rough layout.
+- [ ] DualViewToggle is implemented and functional — Toggle between Visual Builder and JSON spec.
+
+## Data Requirements
+
+Reference: `context/data-model.md`
+
+- Stage (stageNumber=7)
+- All previous stage data (product, entities, design tokens, stack, API)
+
+## Interactions & Behaviors
+
+- **Generate All Sections**: AI creates specs for all sections identified in product definition
+- **Switch tabs**: Load the spec for the selected section
+- **Edit component tree**: Drag/drop, add/remove components in the hierarchy
+- **Add section**: Create a new section tab with empty spec
+- **Delete section**: Confirm dialog → remove section tab and spec
+
+## SDP Section Reference
+
+Full specification available at: `context/sdp-source/sections/`
+
+```json
+{
+  "name": "Section Builder",
+  "route": "/projects/:id/stage/7",
+  "parentSection": "Pipeline View",
+  "description": "Stage 7 editor. The most detailed stage \u2014 specify each screen/page with component hierarchy, data requirements, interactions, and state management. One tab per section, with AI generating the initial spec for each.",
+  "components": [
+    {
+      "name": "SectionTabs",
+      "description": "Horizontal tab bar showing all sections identified in the product definition. Each tab has the section name and a status badge (empty/generated/edited). Add Section button at the end.",
+      "props": [
+        "sections: SectionSpec[]",
+        "activeSection: string",
+        "onSelect",
+        "onAdd"
+      ]
+    },
+    {
+      "name": "ComponentTreeEditor",
+      "description": "Visual tree editor for the section's component hierarchy. Each node shows component name, description, and props. Drag to reorder. Indent to nest. Add/remove nodes.",
+      "props": [
+        "tree: ComponentNode[]",
+        "onChange"
+      ]
+    },
+    {
+      "name": "DataRequirements",
+      "description": "Checklist of entities this section uses. Auto-suggested from component props. Shows which fields from each entity are needed.",
+      "props": [
+        "requirements: EntityRef[]",
+        "availableEntities: Entity[]",
+        "onChange"
+      ]
+    },
+    {
+      "name": "InteractionEditor",
+      "description": "List of trigger\u2192behavior pairs defining user interactions for this section. Add/edit/remove. AI generates initial interactions from component descriptions.",
+      "props": [
+        "interactions: Interaction[]",
+        "onChange"
+      ]
+    },
+    {
+      "name": "StateManagementNotes",
+      "description": "Text area for server state (API queries) and client state (local UI state) notes. AI pre-fills based on components and data requirements.",
+      "props": [
+        "state: StateNotes",
+        "onChange"
+      ]
+    },
+    {
+      "name": "SectionPreview",
+      "description": "Mockup preview of the section layout using design tokens from Stage 6. Shows component boxes with names, arranged in a rough layout.",
+      "props": [
+        "section: SectionSpec",
+        "designTokens: DesignTokens"
+      ]
+    },
+    {
+      "name": "DualViewToggle",
+      "description": "Toggle between Visual Builder and JSON spec.",
+      "props": [
+        "mode: visual|json"
+      ]
+    }
+  ],
+  "dataRequirements": [
+    "Stage (stageNumber=7)",
+    "All previous stage data (product, entities, design tokens, stack, API)"
+  ],
+  "interactions": [
+    {
+      "trigger": "Generate All Sections",
+      "behavior": "AI creates specs for all sections identified in product definition"
+    },
+    {
+      "trigger": "Switch tabs",
+      "behavior": "Load the spec for the selected section"
+    },
+    {
+      "trigger": "Edit component tree",
+      "behavior": "Drag/drop, add/remove components in the hierarchy"
+    },
+    {
+      "trigger": "Add section",
+      "behavior": "Create a new section tab with empty spec"
+    },
+    {
+      "trigger": "Delete section",
+      "behavior": "Confirm dialog \u2192 remove section tab and spec"
+    }
+  ]
+}
+```

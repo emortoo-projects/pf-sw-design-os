@@ -1,0 +1,23 @@
+{
+  "name": "Data Model Editor",
+  "route": "/projects/:id/stage/2",
+  "parentSection": "Pipeline View",
+  "description": "Stage 2 editor. AI analyzes the product definition and identifies entities with typed attributes and relationships. Visual entity cards with field management. Relationship lines between entities.",
+  "components": [
+    {"name": "EntityCanvas", "description": "Main canvas area showing entity cards arranged in a grid or free-form layout. Relationship lines drawn between connected entities. Zoom and pan controls.", "children": ["EntityCard", "RelationshipLine"]},
+    {"name": "EntityCard", "description": "Card representing a single entity. Shows entity name (editable), description, and field list. Each field row has name, type dropdown, required toggle, and description. Add/remove field buttons. Delete entity button.", "props": ["entity: Entity", "onChange", "onDelete"]},
+    {"name": "FieldEditor", "description": "Inline editor for a single entity field. Type dropdown includes: string, text, integer, decimal, boolean, uuid, datetime, enum(), jsonb. Required toggle. Description input.", "props": ["field: Field", "onChange"]},
+    {"name": "RelationshipLine", "description": "Visual line connecting two entities showing relationship type (1:1, 1:N, M:N) and foreign key name. Click to edit or delete.", "props": ["relationship: Relationship"]},
+    {"name": "AddEntityButton", "description": "Button to add a new blank entity card to the canvas.", "props": ["onAdd"]},
+    {"name": "AddRelationshipButton", "description": "Button that enters relationship-drawing mode. User clicks source entity then target entity to create a relationship.", "props": ["onStartDrawing"]},
+    {"name": "DualViewToggle", "description": "Toggle between Visual Canvas and TypeScript Interfaces view.", "props": ["mode: visual|typescript|json"]}
+  ],
+  "dataRequirements": ["Stage (stageNumber=2)", "Stage 1 data (product definition for context)"],
+  "interactions": [
+    {"trigger": "Generate from product", "behavior": "AI reads product definition → creates entity cards with fields and relationships"},
+    {"trigger": "Edit entity name/description", "behavior": "Inline edit on the card"},
+    {"trigger": "Add/remove/edit field", "behavior": "Modify field list within entity card"},
+    {"trigger": "Draw relationship", "behavior": "Enter drawing mode → click source → click target → select type"},
+    {"trigger": "Switch to TypeScript view", "behavior": "Show entities as TypeScript interfaces with types"}
+  ]
+}

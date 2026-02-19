@@ -1,0 +1,20 @@
+{
+  "name": "Infrastructure Config",
+  "route": "/projects/:id/stage/8",
+  "parentSection": "Pipeline View",
+  "description": "Stage 8 editor. Define deployment targets, Docker configuration, CI/CD pipelines, and environment variables.",
+  "components": [
+    {"name": "HostingSelector", "description": "Card grid for selecting hosting approach: Local Docker, Railway, Fly.io, Modal, Vercel+Backend, Custom. Each card shows pricing hints and best-for description.", "props": ["selected: string", "onChange"]},
+    {"name": "DockerPreview", "description": "Generated Dockerfile and docker-compose.yml with syntax highlighting. Editable in-place. Regenerates when stack or hosting changes.", "props": ["dockerfile: string", "compose: string", "onChange"]},
+    {"name": "CIPipelineEditor", "description": "Visual pipeline editor showing test → build → deploy stages. Each stage has configurable steps. Generates GitHub Actions YAML.", "props": ["pipeline: CIPipeline", "onChange"]},
+    {"name": "EnvVarManager", "description": "Table of environment variables with name, required flag, default value, and description. AI pre-fills based on stack and infrastructure choices. User can add custom vars.", "props": ["envVars: EnvVar[]", "onChange"]},
+    {"name": "DualViewToggle", "description": "Toggle between Visual Config and raw YAML/JSON output.", "props": ["mode: visual|yaml|json"]}
+  ],
+  "dataRequirements": ["Stage (stageNumber=8)", "Stage 5 data (stack)", "Stage 3 data (database engine)"],
+  "interactions": [
+    {"trigger": "Select hosting", "behavior": "Regenerate Docker and CI config for selected target"},
+    {"trigger": "Generate", "behavior": "AI creates full infra config from stack + hosting choice"},
+    {"trigger": "Edit Dockerfile", "behavior": "Inline edit with syntax highlighting"},
+    {"trigger": "Add env var", "behavior": "Add row to environment variable table"}
+  ]
+}

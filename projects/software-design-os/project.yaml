@@ -1,0 +1,6 @@
+name: "software-design-os"
+description: "The AI-native blueprint engine for building software. A hybrid human-AI tool that transforms software ideas into complete, machine-readable Software Design Packages (SDPs) through a structured 9-stage pipeline."
+stack: "sdos"
+status: planning
+created: "2026-02-18"
+updated: "2026-02-18"

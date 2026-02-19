@@ -1,0 +1,23 @@
+{
+  "name": "Section Builder",
+  "route": "/projects/:id/stage/7",
+  "parentSection": "Pipeline View",
+  "description": "Stage 7 editor. The most detailed stage — specify each screen/page with component hierarchy, data requirements, interactions, and state management. One tab per section, with AI generating the initial spec for each.",
+  "components": [
+    {"name": "SectionTabs", "description": "Horizontal tab bar showing all sections identified in the product definition. Each tab has the section name and a status badge (empty/generated/edited). Add Section button at the end.", "props": ["sections: SectionSpec[]", "activeSection: string", "onSelect", "onAdd"]},
+    {"name": "ComponentTreeEditor", "description": "Visual tree editor for the section's component hierarchy. Each node shows component name, description, and props. Drag to reorder. Indent to nest. Add/remove nodes.", "props": ["tree: ComponentNode[]", "onChange"]},
+    {"name": "DataRequirements", "description": "Checklist of entities this section uses. Auto-suggested from component props. Shows which fields from each entity are needed.", "props": ["requirements: EntityRef[]", "availableEntities: Entity[]", "onChange"]},
+    {"name": "InteractionEditor", "description": "List of trigger→behavior pairs defining user interactions for this section. Add/edit/remove. AI generates initial interactions from component descriptions.", "props": ["interactions: Interaction[]", "onChange"]},
+    {"name": "StateManagementNotes", "description": "Text area for server state (API queries) and client state (local UI state) notes. AI pre-fills based on components and data requirements.", "props": ["state: StateNotes", "onChange"]},
+    {"name": "SectionPreview", "description": "Mockup preview of the section layout using design tokens from Stage 6. Shows component boxes with names, arranged in a rough layout.", "props": ["section: SectionSpec", "designTokens: DesignTokens"]},
+    {"name": "DualViewToggle", "description": "Toggle between Visual Builder and JSON spec.", "props": ["mode: visual|json"]}
+  ],
+  "dataRequirements": ["Stage (stageNumber=7)", "All previous stage data (product, entities, design tokens, stack, API)"],
+  "interactions": [
+    {"trigger": "Generate All Sections", "behavior": "AI creates specs for all sections identified in product definition"},
+    {"trigger": "Switch tabs", "behavior": "Load the spec for the selected section"},
+    {"trigger": "Edit component tree", "behavior": "Drag/drop, add/remove components in the hierarchy"},
+    {"trigger": "Add section", "behavior": "Create a new section tab with empty spec"},
+    {"trigger": "Delete section", "behavior": "Confirm dialog → remove section tab and spec"}
+  ]
+}

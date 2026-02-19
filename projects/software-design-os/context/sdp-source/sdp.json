@@ -1,0 +1,45 @@
+{
+  "name": "Software Design OS",
+  "slug": "software-design-os",
+  "version": "1.0.0",
+  "description": "The AI-native blueprint engine for building software. A hybrid human-AI tool that transforms software ideas into complete, machine-readable Software Design Packages (SDPs) through a structured 9-stage pipeline.",
+  "schemaVersion": "1.0",
+  "createdAt": "2026-02-18T00:00:00Z",
+  "author": "New Day Learning LLC",
+  "stages": {
+    "product": "complete",
+    "dataModel": "complete",
+    "database": "complete",
+    "api": "complete",
+    "stack": "complete",
+    "design": "complete",
+    "sections": "complete",
+    "infrastructure": "complete",
+    "export": "complete"
+  },
+  "files": {
+    "product": "product/definition.json",
+    "dataModel": "data-model/entities.json",
+    "relationships": "data-model/relationships.json",
+    "database": "database/schema.json",
+    "api": "api/endpoints.json",
+    "stack": "stack/dependencies.json",
+    "structure": "stack/structure.json",
+    "design": "design/tokens.json",
+    "infrastructure": "infrastructure/deployment.json",
+    "sections": [
+      "sections/dashboard.json",
+      "sections/pipeline.json",
+      "sections/product-definition.json",
+      "sections/data-model-editor.json",
+      "sections/database-designer.json",
+      "sections/api-designer.json",
+      "sections/stack-selector.json",
+      "sections/design-system-editor.json",
+      "sections/section-builder.json",
+      "sections/infrastructure-config.json",
+      "sections/export-preview.json",
+      "sections/settings.json"
+    ]
+  }
+}

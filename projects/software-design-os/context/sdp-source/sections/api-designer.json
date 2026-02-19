@@ -1,0 +1,20 @@
+{
+  "name": "API Designer",
+  "route": "/projects/:id/stage/4",
+  "parentSection": "Pipeline View",
+  "description": "Stage 4 editor. AI generates API endpoints from entities and features. Configure auth strategy, pagination, error format, and external integrations.",
+  "components": [
+    {"name": "EndpointList", "description": "Grouped list of endpoints organized by resource (entity). Each row shows method badge (GET/POST/PUT/DELETE with color coding), path, description, and expand arrow for request/response schema.", "props": ["endpoints: Endpoint[]", "onChange"]},
+    {"name": "EndpointDetail", "description": "Expanded view of a single endpoint showing request body schema, response schema, query parameters, path parameters, and example curl command.", "props": ["endpoint: Endpoint"]},
+    {"name": "AuthConfigPanel", "description": "Configuration panel for auth strategy: JWT (with token expiry config), API Key, OAuth, Session. Shows relevant fields based on selection.", "props": ["auth: AuthConfig", "onChange"]},
+    {"name": "IntegrationsList", "description": "List of external integrations with webhook definitions. Add integration with URL, events, and payload format.", "props": ["integrations: Integration[]", "onChange"]},
+    {"name": "DualViewToggle", "description": "Toggle between Structured List, OpenAPI YAML preview, and JSON.", "props": ["mode: structured|openapi|json"]}
+  ],
+  "dataRequirements": ["Stage (stageNumber=4)", "Stage 2 data (entities)", "Stage 1 data (features)"],
+  "interactions": [
+    {"trigger": "Generate", "behavior": "AI creates CRUD endpoints for each entity + custom endpoints for features"},
+    {"trigger": "Expand endpoint", "behavior": "Show request/response schemas"},
+    {"trigger": "Change auth strategy", "behavior": "Update auth config, regenerate auth-related endpoints"},
+    {"trigger": "Add integration", "behavior": "Open integration form with URL, events, payload fields"}
+  ]
+}
