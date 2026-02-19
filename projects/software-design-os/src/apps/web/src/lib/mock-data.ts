@@ -621,6 +621,132 @@ const mockApiDesign = {
   errorFormat: { code: 'string', message: 'string', details: 'object?' },
 }
 
+const mockStackSelection = {
+  selections: {
+    frontend: 'react',
+    backend: 'hono',
+    styling: 'tailwindcss',
+    stateManagement: 'zustand',
+    testing: 'vitest',
+    orm: 'drizzle',
+  },
+  dependencies: [
+    { id: 'dep-1', name: 'react', version: '^19.0.0', description: 'UI library', dev: false },
+    { id: 'dep-2', name: 'react-dom', version: '^19.0.0', description: 'React DOM renderer', dev: false },
+    { id: 'dep-3', name: 'hono', version: '^4.6.0', description: 'Ultrafast web framework', dev: false },
+    { id: 'dep-4', name: 'drizzle-orm', version: '^0.36.0', description: 'TypeScript ORM', dev: false },
+    { id: 'dep-5', name: 'zustand', version: '^5.0.0', description: 'State management', dev: false },
+    { id: 'dep-6', name: '@tanstack/react-query', version: '^5.62.0', description: 'Async state management', dev: false },
+    { id: 'dep-7', name: 'zod', version: '^3.24.0', description: 'Schema validation', dev: false },
+    { id: 'dep-8', name: 'tailwindcss', version: '^4.0.0', description: 'Utility-first CSS', dev: true },
+    { id: 'dep-9', name: 'typescript', version: '^5.7.0', description: 'TypeScript compiler', dev: true },
+    { id: 'dep-10', name: 'vite', version: '^6.0.0', description: 'Build tool', dev: true },
+    { id: 'dep-11', name: '@vitejs/plugin-react', version: '^4.3.0', description: 'React Vite plugin', dev: true },
+    { id: 'dep-12', name: 'vitest', version: '^2.1.0', description: 'Vite-native test runner', dev: true },
+    { id: 'dep-13', name: 'playwright', version: '^1.49.0', description: 'E2E testing framework', dev: true },
+    { id: 'dep-14', name: 'drizzle-kit', version: '^0.30.0', description: 'Drizzle migration CLI', dev: true },
+    { id: 'dep-15', name: 'eslint', version: '^9.16.0', description: 'Linter', dev: true },
+  ],
+  structure: {
+    name: 'project-root',
+    type: 'folder' as const,
+    children: [
+      {
+        name: 'src',
+        type: 'folder' as const,
+        children: [
+          {
+            name: 'app',
+            type: 'folder' as const,
+            children: [
+              { name: 'app.tsx', type: 'file' as const },
+              { name: 'main.tsx', type: 'file' as const },
+              { name: 'app.css', type: 'file' as const },
+            ],
+          },
+          {
+            name: 'components',
+            type: 'folder' as const,
+            children: [
+              {
+                name: 'ui',
+                type: 'folder' as const,
+                children: [
+                  { name: 'button.tsx', type: 'file' as const },
+                  { name: 'card.tsx', type: 'file' as const },
+                  { name: 'dialog.tsx', type: 'file' as const },
+                ],
+              },
+            ],
+          },
+          {
+            name: 'features',
+            type: 'folder' as const,
+            children: [
+              { name: 'auth', type: 'folder' as const, children: [{ name: 'login.tsx', type: 'file' as const }] },
+              { name: 'dashboard', type: 'folder' as const, children: [{ name: 'dashboard-view.tsx', type: 'file' as const }] },
+            ],
+          },
+          {
+            name: 'lib',
+            type: 'folder' as const,
+            children: [
+              { name: 'api-client.ts', type: 'file' as const },
+              { name: 'utils.ts', type: 'file' as const },
+            ],
+          },
+          {
+            name: 'stores',
+            type: 'folder' as const,
+            children: [{ name: 'app-store.ts', type: 'file' as const }],
+          },
+        ],
+      },
+      {
+        name: 'server',
+        type: 'folder' as const,
+        children: [
+          { name: 'index.ts', type: 'file' as const },
+          {
+            name: 'routes',
+            type: 'folder' as const,
+            children: [
+              { name: 'auth.ts', type: 'file' as const },
+              { name: 'projects.ts', type: 'file' as const },
+            ],
+          },
+          {
+            name: 'db',
+            type: 'folder' as const,
+            children: [
+              { name: 'schema.ts', type: 'file' as const },
+              { name: 'migrate.ts', type: 'file' as const },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'tests',
+        type: 'folder' as const,
+        children: [
+          { name: 'setup.ts', type: 'file' as const },
+          { name: 'auth.test.ts', type: 'file' as const },
+        ],
+      },
+      { name: 'package.json', type: 'file' as const },
+      { name: 'tsconfig.json', type: 'file' as const },
+      { name: 'vite.config.ts', type: 'file' as const },
+      { name: 'drizzle.config.ts', type: 'file' as const },
+    ],
+  },
+  recommendation: {
+    confidence: 92,
+    summary: 'React + Hono + Drizzle is the ideal modern TypeScript full-stack combination for this project.',
+    reasoning:
+      'Based on the product definition and data model, this project benefits from a type-safe full-stack approach. React 19 provides the mature component ecosystem needed for the multi-stage pipeline UI. Hono offers ultrafast edge-compatible API routing that pairs well with Drizzle\'s SQL-like query builder for the PostgreSQL schema. Zustand keeps client state minimal and predictable, while Tailwind CSS enables rapid UI development matching the design system requirements. Vitest integrates natively with Vite for fast test feedback loops.',
+  },
+}
+
 export function createMockStage(stageNumber: number, statusOverride?: StageStatus): Stage {
   const config = STAGE_CONFIGS[stageNumber - 1]
   let status: StageStatus
@@ -703,6 +829,8 @@ export function createMockGenerateResponse(stageNumber: number): GenerateRespons
     stage.data = mockDatabaseSchema as unknown as Record<string, unknown>
   } else if (stageNumber === 4) {
     stage.data = mockApiDesign as unknown as Record<string, unknown>
+  } else if (stageNumber === 5) {
+    stage.data = mockStackSelection as unknown as Record<string, unknown>
   }
   const output: StageOutput = {
     id: `output-${stageNumber}-${Date.now()}`,

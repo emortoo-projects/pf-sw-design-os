@@ -6,6 +6,7 @@ import { ProductDefinitionEditor } from '@/features/stages/product-definition'
 import { DataModelEditor } from '@/features/stages/data-model'
 import { DatabaseDesignerEditor } from '@/features/stages/database-designer'
 import { ApiDesignerEditor } from '@/features/stages/api-designer'
+import { StackSelectorEditor } from '@/features/stages/stack-selector'
 
 export interface StageEditorProps {
   stage: Stage
@@ -16,7 +17,7 @@ const editorMap: Record<StageName, ComponentType<StageEditorProps>> = {
   dataModel: DataModelEditor,
   database: DatabaseDesignerEditor,
   api: ApiDesignerEditor,
-  stack: StageEditorStub,
+  stack: StackSelectorEditor,
   design: StageEditorStub,
   sections: StageEditorStub,
   infrastructure: StageEditorStub,
