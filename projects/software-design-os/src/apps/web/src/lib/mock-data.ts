@@ -10,6 +10,7 @@ import type {
   StageStatus,
 } from '@sdos/shared'
 import { STAGE_CONFIGS } from '@sdos/shared'
+import { assembleSDPFromStages } from '@/features/stages/export-preview'
 
 const now = new Date().toISOString()
 const yesterday = new Date(Date.now() - 86400000).toISOString()
@@ -747,6 +748,383 @@ const mockStackSelection = {
   },
 }
 
+const mockDesignSystem = {
+  colors: {
+    primary: {
+      '50': '#f0f9ff',
+      '100': '#e0f2fe',
+      '200': '#bae6fd',
+      '300': '#7dd3fc',
+      '400': '#38bdf8',
+      '500': '#0ea5e9',
+      '600': '#0284c7',
+      '700': '#0369a1',
+      '800': '#075985',
+      '900': '#0c4a6e',
+      '950': '#082f49',
+    },
+    secondary: {
+      '50': '#fffbeb',
+      '100': '#fef3c7',
+      '200': '#fde68a',
+      '300': '#fcd34d',
+      '400': '#fbbf24',
+      '500': '#f59e0b',
+      '600': '#d97706',
+      '700': '#b45309',
+      '800': '#92400e',
+      '900': '#78350f',
+      '950': '#451a03',
+    },
+    neutral: {
+      '50': '#fafafa',
+      '100': '#f4f4f5',
+      '200': '#e4e4e7',
+      '300': '#d4d4d8',
+      '400': '#a1a1aa',
+      '500': '#71717a',
+      '600': '#52525b',
+      '700': '#3f3f46',
+      '800': '#27272a',
+      '900': '#18181b',
+      '950': '#09090b',
+    },
+  },
+  typography: {
+    heading: { fontFamily: 'Inter', weights: [600, 700] },
+    body: { fontFamily: 'Inter', weights: [400, 500] },
+    mono: { fontFamily: 'JetBrains Mono', weights: [400, 500] },
+    scale: {
+      xs: '0.75rem',
+      sm: '0.875rem',
+      base: '1rem',
+      lg: '1.125rem',
+      xl: '1.25rem',
+      '2xl': '1.5rem',
+      '3xl': '1.875rem',
+      '4xl': '2.25rem',
+    },
+  },
+  spacing: {
+    base: 4,
+    scale: [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64],
+  },
+  borderRadius: {
+    sm: '6px',
+    md: '8px',
+    lg: '12px',
+    xl: '16px',
+    full: '9999px',
+  },
+  shadows: {
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+  },
+  applicationShell: {
+    layout: 'sidebar',
+    sidebar: {
+      width: '260px',
+      collapsedWidth: '64px',
+      position: 'left',
+      collapsible: true,
+      background: 'neutral.900',
+      textColor: 'neutral.200',
+    },
+    mainContent: {
+      background: 'neutral.50',
+      maxWidth: 'none',
+      padding: '24px',
+    },
+    navigation: [
+      { label: 'Dashboard', icon: 'Home', route: '/' },
+      { label: 'Projects', icon: 'FolderOpen', route: '/projects' },
+      { label: 'Templates', icon: 'LayoutTemplate', route: '/templates' },
+      { label: 'Usage', icon: 'BarChart3', route: '/usage' },
+      { label: 'Settings', icon: 'Settings', route: '/settings' },
+    ],
+  },
+}
+
+const mockSectionsData = {
+  sections: [
+    {
+      id: 'sec-dashboard',
+      name: 'Dashboard',
+      route: '/',
+      description: 'Landing page showing all projects with pipeline completion status. Grid of project cards with creation, status, and progress indicators.',
+      components: [
+        {
+          id: 'comp-dash-layout',
+          name: 'DashboardLayout',
+          description: 'Main layout wrapper with stats bar and project grid',
+          props: [],
+          children: [
+            {
+              id: 'comp-dash-header',
+              name: 'DashboardHeader',
+              description: 'Page title, search input, and create project button',
+              props: ['onSearch', 'onCreate'],
+              children: [],
+            },
+            {
+              id: 'comp-project-grid',
+              name: 'ProjectGrid',
+              description: 'Responsive grid of ProjectCard components sorted by last updated',
+              props: ['projects: Project[]'],
+              children: [
+                {
+                  id: 'comp-project-card',
+                  name: 'ProjectCard',
+                  description: 'Card showing project name, description snippet, 9-stage progress bar, and completion percentage',
+                  props: ['project: Project', 'stages: Stage[]'],
+                  children: [
+                    {
+                      id: 'comp-stage-badge',
+                      name: 'StageBadge',
+                      description: 'Mini badge showing stage number and completion status',
+                      props: ['stage: Stage'],
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      dataRequirements: ['Project', 'Stage'],
+      interactions: [
+        { id: 'int-dash-1', trigger: 'Click project card', behavior: 'Navigate to /projects/:id (PipelineView)' },
+        { id: 'int-dash-2', trigger: 'Click create button', behavior: 'Open CreateProjectModal' },
+        { id: 'int-dash-3', trigger: 'Search/filter', behavior: 'Filter project grid by name or status (client-side)' },
+      ],
+      stateManagement: {
+        serverState: 'useQuery to fetch projects list with stages',
+        clientState: 'Modal open/close, search filter text',
+      },
+    },
+    {
+      id: 'sec-pipeline',
+      name: 'Pipeline View',
+      route: '/projects/:id',
+      description: 'Primary workspace for a single project. Displays the 9-stage pipeline progress bar with the active stage editor loaded below.',
+      components: [
+        {
+          id: 'comp-pipe-layout',
+          name: 'PipelineLayout',
+          description: 'Full-width layout with progress bar and editor container',
+          props: [],
+          children: [
+            {
+              id: 'comp-stage-sidebar',
+              name: 'StageSidebar',
+              description: 'Vertical list of 9 stages with status indicators and navigation',
+              props: ['stages: Stage[]', 'currentStage: number'],
+              children: [
+                {
+                  id: 'comp-stage-pill',
+                  name: 'StagePill',
+                  description: 'Individual stage node with status icon, name, and click handler',
+                  props: ['stage: Stage', 'isActive: boolean', 'onClick'],
+                  children: [],
+                },
+              ],
+            },
+            {
+              id: 'comp-editor-panel',
+              name: 'EditorPanel',
+              description: 'Dynamic container loading the appropriate stage editor component',
+              props: ['stage: Stage'],
+              children: [
+                {
+                  id: 'comp-action-bar',
+                  name: 'StageActionBar',
+                  description: 'Bottom action bar with Generate, Save, Complete, and Revert buttons',
+                  props: ['stage: Stage', 'onGenerate', 'onSave', 'onComplete', 'onRevert'],
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      dataRequirements: ['Project', 'Stage', 'StageOutput'],
+      interactions: [
+        { id: 'int-pipe-1', trigger: 'Click stage in sidebar', behavior: 'Navigate to that stage if completed or active' },
+        { id: 'int-pipe-2', trigger: 'Click Generate', behavior: 'POST /generate → show loading → display result' },
+        { id: 'int-pipe-3', trigger: 'Click Complete', behavior: 'Validate → unlock next stage' },
+        { id: 'int-pipe-4', trigger: 'Click Revert', behavior: 'Confirm dialog → lock subsequent stages' },
+      ],
+      stateManagement: {
+        serverState: 'useQuery for project + all stages. useMutation for generate/save/complete/revert.',
+        clientState: 'activeStageNumber, editorDirtyState, confirmRevertDialog',
+      },
+    },
+    {
+      id: 'sec-settings',
+      name: 'Settings',
+      route: '/settings',
+      description: 'User preferences, AI provider management, and aggregate usage statistics.',
+      components: [
+        {
+          id: 'comp-settings-layout',
+          name: 'SettingsLayout',
+          description: 'Settings page with tab navigation and content area',
+          props: [],
+          children: [
+            {
+              id: 'comp-settings-tabs',
+              name: 'SettingsTabs',
+              description: 'Tab navigation for settings categories: Profile, AI Providers, Usage',
+              props: ['activeTab: string', 'onSelect'],
+              children: [],
+            },
+            {
+              id: 'comp-profile-form',
+              name: 'ProfileForm',
+              description: 'User profile form with name, email, avatar, and default preferences',
+              props: ['user: User', 'onChange'],
+              children: [],
+            },
+            {
+              id: 'comp-ai-provider',
+              name: 'AIProviderConfig',
+              description: 'List of configured AI providers with add/edit/delete/test buttons',
+              props: ['providers: AIProviderConfig[]', 'onChange'],
+              children: [
+                {
+                  id: 'comp-provider-card',
+                  name: 'ProviderCard',
+                  description: 'Card showing provider label, type, model, connection status, and test button',
+                  props: ['provider: AIProviderConfig', 'onTest', 'onEdit', 'onDelete'],
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      dataRequirements: ['User'],
+      interactions: [
+        { id: 'int-set-1', trigger: 'Switch tab', behavior: 'Show corresponding settings panel' },
+        { id: 'int-set-2', trigger: 'Save profile', behavior: 'PUT /api/users/me → show success toast' },
+        { id: 'int-set-3', trigger: 'Test provider', behavior: 'POST /api/ai-providers/:id/test → show success/failure' },
+      ],
+      stateManagement: {
+        serverState: 'useQuery for user profile and AI providers',
+        clientState: 'activeTab, form dirty state',
+      },
+    },
+  ],
+}
+
+const mockInfrastructureData = {
+  hosting: 'railway' as const,
+  docker: {
+    dockerfile: `# Stage 1: Dependencies
+FROM node:22-alpine AS deps
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Stage 2: Build
+FROM node:22-alpine AS builder
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm build
+
+# Stage 3: Production
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 appuser
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+USER appuser
+EXPOSE 3000
+CMD ["node", "dist/server/index.js"]`,
+    compose: `version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/sdos
+      - NODE_ENV=production
+      - SESSION_SECRET=\${SESSION_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sdos
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:`,
+  },
+  ciPipeline: {
+    name: 'CI/CD',
+    trigger: 'push to main',
+    stages: [
+      {
+        id: 'ci-test',
+        name: 'test',
+        steps: [
+          { id: 'step-lint', name: 'Lint', command: 'pnpm lint', enabled: true },
+          { id: 'step-typecheck', name: 'Type Check', command: 'pnpm typecheck', enabled: true },
+          { id: 'step-unit', name: 'Unit Tests', command: 'pnpm test', enabled: true },
+          { id: 'step-e2e', name: 'E2E Tests', command: 'pnpm test:e2e', enabled: false },
+        ],
+      },
+      {
+        id: 'ci-build',
+        name: 'build',
+        steps: [
+          { id: 'step-docker-build', name: 'Docker Build', command: 'docker build -t sdos:latest .', enabled: true },
+          { id: 'step-push-registry', name: 'Push to Registry', command: 'docker push registry/sdos:latest', enabled: true },
+        ],
+      },
+      {
+        id: 'ci-deploy',
+        name: 'deploy',
+        steps: [
+          { id: 'step-deploy-railway', name: 'Deploy to Railway', command: 'railway up --detach', enabled: true },
+          { id: 'step-migrate', name: 'Run Migrations', command: 'pnpm drizzle-kit push', enabled: true },
+        ],
+      },
+    ],
+  },
+  envVars: [
+    { id: 'env-1', name: 'DATABASE_URL', required: true, defaultValue: '', description: 'PostgreSQL connection string' },
+    { id: 'env-2', name: 'SESSION_SECRET', required: true, defaultValue: '', description: 'Secret key for session encryption' },
+    { id: 'env-3', name: 'AI_PROVIDER_API_KEY', required: true, defaultValue: '', description: 'API key for AI provider (Claude/OpenAI)' },
+    { id: 'env-4', name: 'PORT', required: false, defaultValue: '3000', description: 'Server port' },
+    { id: 'env-5', name: 'NODE_ENV', required: false, defaultValue: 'production', description: 'Node environment' },
+    { id: 'env-6', name: 'CORS_ORIGIN', required: false, defaultValue: '', description: 'Allowed CORS origin for API requests' },
+  ],
+}
+
 export function createMockStage(stageNumber: number, statusOverride?: StageStatus): Stage {
   const config = STAGE_CONFIGS[stageNumber - 1]
   let status: StageStatus
@@ -831,6 +1209,23 @@ export function createMockGenerateResponse(stageNumber: number): GenerateRespons
     stage.data = mockApiDesign as unknown as Record<string, unknown>
   } else if (stageNumber === 5) {
     stage.data = mockStackSelection as unknown as Record<string, unknown>
+  } else if (stageNumber === 6) {
+    stage.data = mockDesignSystem as unknown as Record<string, unknown>
+  } else if (stageNumber === 7) {
+    stage.data = mockSectionsData as unknown as Record<string, unknown>
+  } else if (stageNumber === 8) {
+    stage.data = mockInfrastructureData as unknown as Record<string, unknown>
+  } else if (stageNumber === 9) {
+    stage.data = assembleSDPFromStages({
+      product: mockProductDefinition as unknown as Record<string, unknown>,
+      dataModel: mockDataModel as unknown as Record<string, unknown>,
+      database: mockDatabaseSchema as unknown as Record<string, unknown>,
+      api: mockApiDesign as unknown as Record<string, unknown>,
+      stack: mockStackSelection as unknown as Record<string, unknown>,
+      design: mockDesignSystem as unknown as Record<string, unknown>,
+      sections: mockSectionsData as unknown as Record<string, unknown>,
+      infrastructure: mockInfrastructureData as unknown as Record<string, unknown>,
+    }) as unknown as Record<string, unknown>
   }
   const output: StageOutput = {
     id: `output-${stageNumber}-${Date.now()}`,
@@ -873,4 +1268,86 @@ export function createMockRevertResponse(stageNumber: number): RevertResponse {
     lockedStages.push(createMockStage(i, 'locked'))
   }
   return { stage, lockedStages }
+}
+
+function createMockProjectWithProgress(
+  id: string,
+  name: string,
+  description: string,
+  currentStage: number,
+  updatedAt: string,
+): ProjectWithStages {
+  const stages = STAGE_CONFIGS.map((config, i) => {
+    const stageNum = i + 1
+    let status: StageStatus
+    if (stageNum < currentStage) {
+      status = 'complete'
+    } else if (stageNum === currentStage) {
+      status = 'active'
+    } else {
+      status = 'locked'
+    }
+    return {
+      id: `${id}-stage-${stageNum}`,
+      projectId: id,
+      stageNumber: config.number,
+      stageName: config.name,
+      stageLabel: config.label,
+      status,
+      data: status === 'complete' ? ({ generated: true } as Record<string, unknown>) : undefined,
+      validatedAt: status === 'complete' ? yesterday : undefined,
+      completedAt: status === 'complete' ? yesterday : undefined,
+      createdAt: yesterday,
+      updatedAt,
+    }
+  })
+
+  return {
+    id,
+    userId: 'mock-user-1',
+    name,
+    slug: name.toLowerCase().replace(/\s+/g, '-'),
+    description,
+    currentStage,
+    status: 'active',
+    createdAt: yesterday,
+    updatedAt,
+    stages,
+  }
+}
+
+export function createMockProjectsList(): ProjectWithStages[] {
+  const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString()
+  const fiveDaysAgo = new Date(Date.now() - 5 * 86400000).toISOString()
+
+  return [
+    createMockProjectWithProgress(
+      'mock-project-1',
+      'Software Design OS',
+      'AI-native blueprint engine for building software',
+      5,
+      now,
+    ),
+    createMockProjectWithProgress(
+      'mock-project-2',
+      'E-Commerce Platform',
+      'Full-stack marketplace with vendor management and payments',
+      3,
+      twoDaysAgo,
+    ),
+    createMockProjectWithProgress(
+      'mock-project-3',
+      'Analytics Dashboard',
+      'Real-time metrics visualization and alerting system',
+      7,
+      yesterday,
+    ),
+    createMockProjectWithProgress(
+      'mock-project-4',
+      'Learning Management System',
+      'Course authoring platform with progress tracking and certificates',
+      1,
+      fiveDaysAgo,
+    ),
+  ]
 }

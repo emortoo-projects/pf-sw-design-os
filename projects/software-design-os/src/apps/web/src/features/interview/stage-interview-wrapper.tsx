@@ -1,4 +1,4 @@
-import { useState, useCallback, type ReactNode } from 'react'
+import { useState, useCallback, useEffect, type ReactNode } from 'react'
 import { ClipboardList, RotateCcw } from 'lucide-react'
 import type { Stage } from '@sdos/shared'
 import { usePipelineStore } from '@/stores/pipeline-store'
@@ -21,7 +21,7 @@ export function StageInterviewWrapper({
   isGenerating,
   children,
 }: StageInterviewWrapperProps) {
-  const { setUserInput } = usePipelineStore()
+  const { setUserInput, setIsInterviewing } = usePipelineStore()
   const [mode, setMode] = useState<InterviewMode | null>(null)
   const [answers, setAnswers] = useState<InterviewAnswers>({})
   const [showInterview, setShowInterview] = useState(false)
@@ -36,8 +36,15 @@ export function StageInterviewWrapper({
   const stageHasData = !!stage.data && Object.keys(stage.data).length > 0
   const stageIsActive = stage.status === 'active'
 
-  // Expose whether the interview is currently showing so parent can hide action bar
   const isInterviewing = !!config && hasInterview(stage.stageNumber) && (!stageHasData || showInterview)
+
+  // Sync interviewing state to store so parent components (e.g. StageActionBar) can react
+  useEffect(() => {
+    if (isInterviewing) {
+      setIsInterviewing(true)
+      return () => setIsInterviewing(false)
+    }
+  }, [isInterviewing, setIsInterviewing])
 
   // No interview for this stage — pass through to editor
   if (!config || !hasInterview(stage.stageNumber)) {
@@ -73,7 +80,7 @@ export function StageInterviewWrapper({
 
   // Stage is active with no data OR user chose to re-interview — show interview flow
   return (
-    <div className="space-y-6" data-interviewing={isInterviewing ? 'true' : undefined}>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -114,12 +121,4 @@ export function StageInterviewWrapper({
       )}
     </div>
   )
-}
-
-// Re-export a hook to check if interview is active (for hiding action bar)
-export function useIsInterviewing(stage: Stage): boolean {
-  const config = getStageInterview(stage.stageNumber)
-  const stageHasData = !!stage.data && Object.keys(stage.data).length > 0
-  if (!config || !hasInterview(stage.stageNumber)) return false
-  return !stageHasData
 }

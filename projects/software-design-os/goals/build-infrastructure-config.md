@@ -1,6 +1,6 @@
 ---
 title: Build Infrastructure Config
-status: not-started
+status: complete
 priority: medium
 created: 2026-02-18
 source: sdp-import

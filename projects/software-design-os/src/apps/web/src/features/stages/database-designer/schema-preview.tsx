@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 interface SchemaPreviewProps {
   schema: string
-  language: 'sql' | 'json'
+  language: 'sql' | 'json' | 'css' | 'yaml' | 'markdown'
 }
 
 export function SchemaPreview({ schema, language }: SchemaPreviewProps) {
@@ -32,7 +32,7 @@ export function SchemaPreview({ schema, language }: SchemaPreviewProps) {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-zinc-700">
-          {language === 'sql' ? 'SQL Schema' : 'JSON Schema'}
+          {language === 'sql' ? 'SQL Schema' : language === 'css' ? 'CSS Variables' : language === 'yaml' ? 'YAML' : language === 'markdown' ? 'Markdown' : 'JSON Schema'}
         </label>
         <Button variant="ghost" size="sm" onClick={handleCopy}>
           {copied ? (

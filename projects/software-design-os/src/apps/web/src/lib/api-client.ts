@@ -7,7 +7,15 @@ import type {
   Stage,
 } from '@sdos/shared'
 
+export interface CreateProjectInput {
+  name: string
+  description?: string
+  templateId?: string
+}
+
 export interface ApiClient {
+  listProjects(): Promise<ProjectWithStages[]>
+  createProject(input: CreateProjectInput): Promise<ProjectWithStages>
   getProject(id: string): Promise<ProjectWithStages>
   getStage(projectId: string, stageNumber: number): Promise<StageWithOutputs>
   updateStage(projectId: string, stageNumber: number, data: Record<string, unknown>): Promise<Stage>
@@ -29,6 +37,17 @@ class HttpApiClient implements ApiClient {
       throw new Error(error.error || `HTTP ${res.status}`)
     }
     return res.json()
+  }
+
+  listProjects() {
+    return this.fetch<ProjectWithStages[]>('/projects')
+  }
+
+  createProject(input: CreateProjectInput) {
+    return this.fetch<ProjectWithStages>('/projects', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
   }
 
   getProject(id: string) {
@@ -68,6 +87,18 @@ class HttpApiClient implements ApiClient {
 
 class MockApiClient implements ApiClient {
   private data = import('@/lib/mock-data')
+
+  async listProjects() {
+    const { createMockProjectsList } = await this.data
+    return createMockProjectsList()
+  }
+
+  async createProject(input: CreateProjectInput) {
+    const { createMockProject } = await this.data
+    const id = `project-${Date.now()}`
+    const project = createMockProject(id)
+    return { ...project, name: input.name, description: input.description, currentStage: 1 }
+  }
 
   async getProject(id: string) {
     const { createMockProject } = await this.data

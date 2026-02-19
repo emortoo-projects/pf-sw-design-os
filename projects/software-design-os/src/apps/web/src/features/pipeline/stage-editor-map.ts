@@ -7,6 +7,10 @@ import { DataModelEditor } from '@/features/stages/data-model'
 import { DatabaseDesignerEditor } from '@/features/stages/database-designer'
 import { ApiDesignerEditor } from '@/features/stages/api-designer'
 import { StackSelectorEditor } from '@/features/stages/stack-selector'
+import { DesignSystemEditor } from '@/features/stages/design-system'
+import { SectionBuilderEditor } from '@/features/stages/section-builder'
+import { InfrastructureEditor } from '@/features/stages/infrastructure'
+import { ExportPreviewEditor } from '@/features/stages/export-preview'
 
 export interface StageEditorProps {
   stage: Stage
@@ -18,10 +22,10 @@ const editorMap: Record<StageName, ComponentType<StageEditorProps>> = {
   database: DatabaseDesignerEditor,
   api: ApiDesignerEditor,
   stack: StackSelectorEditor,
-  design: StageEditorStub,
-  sections: StageEditorStub,
-  infrastructure: StageEditorStub,
-  export: StageEditorStub,
+  design: DesignSystemEditor,
+  sections: SectionBuilderEditor,
+  infrastructure: InfrastructureEditor,
+  export: ExportPreviewEditor,
 }
 
 export function getStageEditor(stageName: StageName): ComponentType<StageEditorProps> {

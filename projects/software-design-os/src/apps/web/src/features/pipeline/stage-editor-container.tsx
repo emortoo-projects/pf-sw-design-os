@@ -1,6 +1,7 @@
 import type { Stage } from '@sdos/shared'
 import { Card, CardContent } from '@/components/ui/card'
-import { StageInterviewWrapper, useIsInterviewing } from '@/features/interview'
+import { usePipelineStore } from '@/stores/pipeline-store'
+import { StageInterviewWrapper } from '@/features/interview'
 import { StageHeader } from './stage-header'
 import { StageActionBar } from './stage-action-bar'
 import { LockedStageMessage } from './locked-stage-message'
@@ -28,7 +29,7 @@ export function StageEditorContainer({
   isSaving,
 }: StageEditorContainerProps) {
   const Editor = getStageEditor(stage.stageName)
-  const interviewing = useIsInterviewing(stage)
+  const interviewing = usePipelineStore((s) => s.isInterviewing)
 
   return (
     <Card>
@@ -39,6 +40,7 @@ export function StageEditorContainer({
         ) : (
           <div className="space-y-4">
             <StageInterviewWrapper
+              key={stage.id}
               stage={stage}
               onGenerate={onGenerate}
               isGenerating={isGenerating}
