@@ -9,6 +9,7 @@ import { auth } from './routes/auth'
 import { userRoutes } from './routes/users'
 import { projects } from './routes/projects'
 import { templateRoutes } from './routes/templates'
+import { stageRoutes } from './routes/stages'
 import type { AppEnv } from './types'
 
 const app = new Hono<AppEnv>()
@@ -26,6 +27,7 @@ app.route('/api/auth', auth)
 app.route('/api/users', userRoutes)
 app.route('/api/projects', projects)
 app.route('/api/templates', templateRoutes)
+app.route('/api/projects/:projectId/stages', stageRoutes)
 
 // Health check with DB ping
 app.get('/api/health', async (c) => {
