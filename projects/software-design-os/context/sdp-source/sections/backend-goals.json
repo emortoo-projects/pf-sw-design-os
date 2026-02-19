@@ -1,0 +1,217 @@
+{
+  "phase": "Backend & Integration",
+  "description": "Wire the frontend to a real backend. Replace all mock data with actual API calls, database persistence, and AI generation.",
+
+  "goals": [
+    {
+      "name": "setup-backend-foundation",
+      "title": "Setup Backend Foundation",
+      "priority": "critical",
+      "description": "Initialize the Hono API server, Drizzle ORM, PostgreSQL connection, and project structure in apps/api/. Create the base middleware stack (CORS, JSON parsing, error handling, request logging).",
+      "acceptance": [
+        "apps/api/src/index.ts serves Hono on port 3000",
+        "Drizzle config connects to PostgreSQL via DATABASE_URL",
+        "db/schema.ts defines all 9 tables from the SDP database schema",
+        "Drizzle migrations generated and runnable",
+        "Seed script creates demo user and built-in templates",
+        "Middleware: CORS, JSON body parsing, error handler, request logger",
+        "Health check endpoint at GET /api/health",
+        "Docker Compose with postgres service works with pnpm dev"
+      ],
+      "dependencies": [],
+      "estimatedFiles": 15
+    },
+    {
+      "name": "setup-auth",
+      "title": "Authentication System",
+      "priority": "critical",
+      "description": "JWT-based auth with register, login, refresh, and middleware guard. Password hashing with bcrypt. Auth middleware that protects all /api/* routes except /auth/*.",
+      "acceptance": [
+        "POST /api/auth/register — creates user, returns JWT + refresh token",
+        "POST /api/auth/login — validates credentials, returns JWT + refresh token",
+        "POST /api/auth/refresh — issues new access token from refresh token",
+        "GET /api/users/me — returns authenticated user profile",
+        "PUT /api/users/me — updates user profile and preferences",
+        "Auth middleware rejects requests without valid JWT",
+        "JWT expires in 7 days, refresh token in 30 days",
+        "Password hashed with bcrypt (12 rounds)",
+        "Frontend auth context and login/register pages"
+      ],
+      "dependencies": ["setup-backend-foundation"],
+      "estimatedFiles": 12
+    },
+    {
+      "name": "build-project-crud",
+      "title": "Project CRUD API",
+      "priority": "critical",
+      "description": "Full project lifecycle: create, read, update, soft delete. Creating a project auto-generates 9 locked stages. Replace frontend mock data with real API calls.",
+      "acceptance": [
+        "GET /api/projects — list user's projects with stage summaries",
+        "POST /api/projects — create project + 9 stages (stage 1 = active, rest locked)",
+        "GET /api/projects/:id — project with all stages",
+        "PUT /api/projects/:id — update project metadata",
+        "DELETE /api/projects/:id — soft delete",
+        "Frontend Dashboard fetches real projects from API",
+        "CreateProjectModal calls POST /api/projects",
+        "Project cards show real stage progress data",
+        "Template application pre-fills stage defaults on create"
+      ],
+      "dependencies": ["setup-auth"],
+      "estimatedFiles": 8
+    },
+    {
+      "name": "build-stage-api",
+      "title": "Stage Management API",
+      "priority": "critical",
+      "description": "Stage lifecycle management: read, update data, complete (validates + unlocks next), revert (locks subsequent). This is the core pipeline engine.",
+      "acceptance": [
+        "GET /api/projects/:id/stages — all 9 stages with status",
+        "GET /api/projects/:id/stages/:num — stage with outputs",
+        "PUT /api/projects/:id/stages/:num — save stage data (human edits)",
+        "POST /api/projects/:id/stages/:num/complete — validate + mark complete + unlock next",
+        "POST /api/projects/:id/stages/:num/revert — revert to review + lock all subsequent",
+        "Stage lifecycle enforced: locked → active → generating → review → complete",
+        "Only one stage can be active at a time (plus completed stages)",
+        "Frontend pipeline view uses real API data",
+        "Generate/Save/Complete/Revert buttons call real endpoints",
+        "Stage data persisted in JSONB column"
+      ],
+      "dependencies": ["build-project-crud"],
+      "estimatedFiles": 10
+    },
+    {
+      "name": "build-ai-generation",
+      "title": "AI Generation Service",
+      "priority": "high",
+      "description": "The intelligence layer. Connects to Claude/OpenAI via user's API keys. Each stage has a prompt template. Generation calls are tracked with token counts and costs. Supports streaming.",
+      "acceptance": [
+        "POST /api/projects/:id/stages/:num/generate — triggers AI generation",
+        "AI provider factory supports Anthropic, OpenAI, and OpenAI-compatible endpoints",
+        "Per-stage prompt templates that include context from previous stages",
+        "Prompt for Stage 1: takes interview answers → generates ProductDefinition",
+        "Prompt for Stage 2: takes ProductDefinition → generates DataModel",
+        "Prompt for Stage 3: takes DataModel → generates DatabaseSchema",
+        "Prompt for Stage 4: takes DataModel + features → generates APISpec",
+        "Prompt for Stage 5: takes product type + DB → recommends Stack",
+        "Prompt for Stage 6: takes mood/product type → generates DesignTokens",
+        "Prompt for Stage 7: takes all previous → generates SectionSpecs",
+        "Prompt for Stage 8: takes stack + DB → generates InfraConfig",
+        "AIGeneration records saved with tokens, cost, duration, model",
+        "API keys encrypted at rest with AES-256",
+        "User's configured provider used (from AIProviderConfig)",
+        "Frontend Generate button shows loading state during generation",
+        "Generated output creates new StageOutput version"
+      ],
+      "dependencies": ["build-stage-api"],
+      "estimatedFiles": 20
+    },
+    {
+      "name": "build-output-versioning",
+      "title": "Stage Output Versioning",
+      "priority": "medium",
+      "description": "Each stage can have multiple output versions (from different AI generations or human edits). Users can switch between versions, compare, and activate a specific version.",
+      "acceptance": [
+        "GET /api/projects/:id/stages/:num/outputs — list all versions",
+        "POST /api/projects/:id/stages/:num/outputs — create manual output",
+        "PUT /api/projects/:id/stages/:num/outputs/:id/activate — set as active version",
+        "Each AI generation creates a new version (auto-incremented)",
+        "Human edits to stage data create a new version on save",
+        "Version history visible in stage editor (dropdown or sidebar)",
+        "Active version is what gets included in SDP export",
+        "Dual format: each version stored as both JSON and Markdown"
+      ],
+      "dependencies": ["build-ai-generation"],
+      "estimatedFiles": 8
+    },
+    {
+      "name": "build-export-engine",
+      "title": "SDP Export Engine",
+      "priority": "high",
+      "description": "Assembles all 9 stage outputs into a complete SDP folder structure. Runs cross-reference validation. Generates zip archive for download.",
+      "acceptance": [
+        "POST /api/projects/:id/export — generates SDP package",
+        "POST /api/projects/:id/validate — runs validation without exporting",
+        "GET /api/projects/:id/exports — list export history",
+        "GET /api/projects/:id/exports/:id/download — download zip",
+        "SDP folder structure matches the spec (sdp.json, product/, data-model/, etc.)",
+        "Cross-reference validation checks: entity refs, API endpoints, design tokens, section data reqs",
+        "Validation returns pass/warning/error per check",
+        "Markdown versions generated alongside JSON for all artifacts",
+        "sdp.json manifest generated with file inventory and checksums",
+        "README.md auto-generated with product overview and quick-start for AI agents",
+        "Frontend Export Preview shows real validation results and file tree",
+        "Download button streams the zip file"
+      ],
+      "dependencies": ["build-stage-api"],
+      "estimatedFiles": 12
+    },
+    {
+      "name": "build-ai-provider-crud",
+      "title": "AI Provider Management API",
+      "priority": "medium",
+      "description": "CRUD for AI provider configurations. Test connection endpoint. Encrypted API key storage.",
+      "acceptance": [
+        "GET /api/ai-providers — list user's providers",
+        "POST /api/ai-providers — add new provider (encrypts API key)",
+        "PUT /api/ai-providers/:id — update provider config",
+        "DELETE /api/ai-providers/:id — delete provider",
+        "POST /api/ai-providers/:id/test — test connection (makes a tiny API call)",
+        "API keys encrypted with AES-256 using ENCRYPTION_KEY env var",
+        "Frontend Settings > AI Providers tab uses real API",
+        "Test Connection button shows success/failure in real time"
+      ],
+      "dependencies": ["setup-auth"],
+      "estimatedFiles": 6
+    },
+    {
+      "name": "build-usage-tracking",
+      "title": "Usage & Cost Tracking API",
+      "priority": "medium",
+      "description": "Aggregate usage statistics across projects and models. Powers the Usage & Costs settings tab and dashboard AI spend card.",
+      "acceptance": [
+        "GET /api/usage?period=30d — aggregate stats (total tokens, cost, by project, by model)",
+        "GET /api/projects/:id/generations — generation history for a project",
+        "Period support: 7d, 30d, 90d, all",
+        "Cost calculation based on model pricing tables",
+        "Frontend Usage & Costs tab uses real data",
+        "Dashboard AI Spend card shows real monthly total",
+        "Spending trend chart populated from real generation timestamps"
+      ],
+      "dependencies": ["build-ai-generation"],
+      "estimatedFiles": 5
+    },
+    {
+      "name": "build-mcp-server",
+      "title": "MCP Server",
+      "priority": "low",
+      "description": "Model Context Protocol server that exposes SDP contents as queryable tools. AI coding agents can pull specific context during development.",
+      "acceptance": [
+        "apps/mcp/src/index.ts serves MCP over stdio",
+        "Token-based auth scoped to specific projects",
+        "Tools: getOverview, getDataModel, getDatabaseSchema, getAPISpec, getStack, getDesignTokens, getSection, getInfrastructure, validate",
+        "Each tool returns the active stage output for the requested artifact",
+        "GET /api/projects/:id/mcp-tokens — list tokens",
+        "POST /api/projects/:id/mcp-tokens — create token (shows plaintext once)",
+        "DELETE /api/projects/:id/mcp-tokens/:id — revoke token",
+        "Frontend MCP Access tab uses real API"
+      ],
+      "dependencies": ["build-export-engine"],
+      "estimatedFiles": 15
+    }
+  ],
+
+  "buildOrder": [
+    "1. setup-backend-foundation (Hono + Drizzle + Postgres + Docker)",
+    "2. setup-auth (JWT + register/login + middleware)",
+    "3. build-project-crud (projects + auto-create stages)",
+    "4. build-stage-api (stage lifecycle + data persistence)",
+    "5. build-ai-provider-crud (provider configs + encrypted keys)",
+    "6. build-ai-generation (prompt templates + provider calls + cost tracking)",
+    "7. build-output-versioning (version history + dual format)",
+    "8. build-export-engine (SDP assembly + validation + download)",
+    "9. build-usage-tracking (aggregate stats + charts)",
+    "10. build-mcp-server (MCP tools + token auth)"
+  ],
+
+  "totalEstimatedFiles": 111
+}

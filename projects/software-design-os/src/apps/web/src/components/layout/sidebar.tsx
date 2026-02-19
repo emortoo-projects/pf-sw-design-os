@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Home, FolderOpen, LayoutTemplate, BarChart3, Settings, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { Home, FolderOpen, LayoutTemplate, BarChart3, Settings, PanelLeftClose, PanelLeft, LogOut } from 'lucide-react'
 import { SidebarNavItem } from './sidebar-nav-item'
 import { cn } from '@/lib/utils'
+import { useAuth, useLogout } from '@/hooks/use-auth'
 
 const navItems = [
   { label: 'Dashboard', icon: Home, to: '/' },
@@ -13,6 +14,15 @@ const navItems = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const { user } = useAuth()
+  const logout = useLogout()
+
+  const initials = user?.name
+    ?.split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() ?? '?'
 
   return (
     <aside
@@ -37,7 +47,31 @@ export function Sidebar() {
         ))}
       </nav>
 
+      {/* User section */}
       <div className="border-t border-zinc-800 p-2">
+        {user && (
+          <div className={cn('flex items-center gap-2 rounded-md px-2 py-1.5', collapsed && 'justify-center')}>
+            {user.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.name} className="h-7 w-7 rounded-full" />
+            ) : (
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-medium text-white">
+                {initials}
+              </div>
+            )}
+            {!collapsed && (
+              <div className="flex flex-1 items-center justify-between">
+                <span className="truncate text-sm text-zinc-300">{user.name}</span>
+                <button
+                  onClick={logout}
+                  className="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                  title="Sign out"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="flex w-full items-center justify-center rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
