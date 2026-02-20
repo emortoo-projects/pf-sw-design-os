@@ -7,6 +7,8 @@ const PUBLIC_PATHS = new Set([
   '/api/auth/refresh',
   '/api/auth/logout',
   '/api/health',
+  '/api/setup/status',
+  '/api/setup',
 ])
 
 function isPublicPath(path: string): boolean {

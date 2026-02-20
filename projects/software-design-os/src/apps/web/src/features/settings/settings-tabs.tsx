@@ -1,7 +1,7 @@
-import { User, Bot, Key, BarChart3 } from 'lucide-react'
+import { User, Bot, Key, Database } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type SettingsTab = 'profile' | 'providers' | 'mcp' | 'usage'
+export type SettingsTab = 'profile' | 'providers' | 'mcp' | 'data'
 
 interface SettingsTabsProps {
   activeTab: SettingsTab
@@ -12,7 +12,7 @@ const TABS: Array<{ id: SettingsTab; label: string; icon: typeof User }> = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'providers', label: 'AI Providers', icon: Bot },
   { id: 'mcp', label: 'MCP Access', icon: Key },
-  { id: 'usage', label: 'Usage & Costs', icon: BarChart3 },
+  { id: 'data', label: 'Data', icon: Database },
 ]
 
 export function SettingsTabs({ activeTab, onSelect }: SettingsTabsProps) {

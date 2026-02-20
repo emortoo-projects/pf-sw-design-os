@@ -3,10 +3,19 @@ import { Search, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProjects } from '@/hooks/use-projects'
-import { DashboardStats, ProjectGrid, CreateProjectModal } from '@/features/dashboard'
+import { useDashboardSummary } from '@/hooks/use-dashboard-summary'
+import {
+  DashboardStats,
+  ProjectGrid,
+  CreateProjectModal,
+  RecentActivity,
+  SpendingSparkline,
+  ModelBreakdown,
+} from '@/features/dashboard'
 
 export function DashboardPage() {
   const { data: projects, isLoading, error } = useProjects()
+  const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
   const [searchQuery, setSearchQuery] = useState('')
   const [createModalOpen, setCreateModalOpen] = useState(false)
 
@@ -32,7 +41,7 @@ export function DashboardPage() {
           <p className="text-sm text-zinc-500">Welcome to Software Design OS</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-[72px] rounded-lg" />
           ))}
         </div>
@@ -58,7 +67,14 @@ export function DashboardPage() {
         </Button>
       </div>
 
-      <DashboardStats projects={projects} />
+      <DashboardStats projects={projects} summary={summary} summaryLoading={summaryLoading} />
+
+      {/* Dashboard Insights */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <RecentActivity generations={summary?.recentGenerations ?? []} />
+        <SpendingSparkline data={summary?.dailySpending ?? []} />
+        <ModelBreakdown models={summary?.modelUsage ?? []} />
+      </div>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />

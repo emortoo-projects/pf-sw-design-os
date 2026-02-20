@@ -1,13 +1,19 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useLogin } from '@/hooks/use-auth'
+import { useSetupStatus } from '@/hooks/use-setup'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const login = useLogin()
+  const { data: setupStatus } = useSetupStatus()
+
+  if (setupStatus?.needsSetup) {
+    return <Navigate to="/setup" replace />
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

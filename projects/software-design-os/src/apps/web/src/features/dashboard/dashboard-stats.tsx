@@ -1,8 +1,11 @@
-import { FolderOpen, Loader2, CheckCircle2, DollarSign } from 'lucide-react'
+import { FolderOpen, Loader2, CheckCircle2, DollarSign, Zap, Hash, Calculator, Bot } from 'lucide-react'
 import type { ProjectWithStages } from '@sdos/shared'
+import type { DashboardSummary } from '@/lib/api-client'
 
 interface DashboardStatsProps {
   projects: ProjectWithStages[]
+  summary: DashboardSummary | undefined
+  summaryLoading: boolean
 }
 
 interface StatCardProps {
@@ -26,7 +29,13 @@ function StatCard({ icon, label, value, color }: StatCardProps) {
   )
 }
 
-export function DashboardStats({ projects }: DashboardStatsProps) {
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
+  return String(n)
+}
+
+export function DashboardStats({ projects, summary, summaryLoading }: DashboardStatsProps) {
   const total = projects.length
   const inProgress = projects.filter((p) => {
     const completedStages = p.stages.filter((s) => s.status === 'complete').length
@@ -36,11 +45,11 @@ export function DashboardStats({ projects }: DashboardStatsProps) {
     p.stages.every((s) => s.status === 'complete'),
   ).length
 
-  // Mock AI spend — sum estimated costs across all "completed" stages
-  const aiSpend = projects.reduce((sum, p) => {
-    const completedCount = p.stages.filter((s) => s.status === 'complete').length
-    return sum + completedCount * 0.012
-  }, 0)
+  const totalCost = summary?.totalCost ?? 0
+  const totalTokens = summary?.totalTokens ?? 0
+  const generationCount = summary?.generationCount ?? 0
+  const avgCost = summary?.avgCostPerGeneration ?? 0
+  const topModel = summary?.topModel
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -65,8 +74,32 @@ export function DashboardStats({ projects }: DashboardStatsProps) {
       <StatCard
         icon={<DollarSign className="h-4 w-4 text-violet-600" />}
         label="AI Spend (month)"
-        value={`$${aiSpend.toFixed(2)}`}
+        value={summaryLoading ? '...' : `$${totalCost.toFixed(2)}`}
         color="bg-violet-50"
+      />
+      <StatCard
+        icon={<Zap className="h-4 w-4 text-blue-600" />}
+        label="Total Tokens"
+        value={summaryLoading ? '...' : formatTokens(totalTokens)}
+        color="bg-blue-50"
+      />
+      <StatCard
+        icon={<Hash className="h-4 w-4 text-rose-600" />}
+        label="Generations"
+        value={summaryLoading ? '...' : generationCount}
+        color="bg-rose-50"
+      />
+      <StatCard
+        icon={<Calculator className="h-4 w-4 text-teal-600" />}
+        label="Avg Cost/Gen"
+        value={summaryLoading ? '...' : `$${avgCost.toFixed(3)}`}
+        color="bg-teal-50"
+      />
+      <StatCard
+        icon={<Bot className="h-4 w-4 text-indigo-600" />}
+        label="Active Model"
+        value={summaryLoading ? '...' : (topModel ? `${topModel.model} (${topModel.percentage}%)` : 'None')}
+        color="bg-indigo-50"
       />
     </div>
   )

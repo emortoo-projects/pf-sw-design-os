@@ -117,9 +117,69 @@ export interface ApiClient {
   deleteAIProvider(id: string): Promise<void>
   testAIProvider(id: string): Promise<TestConnectionResult>
   getUsageSummary(period: UsagePeriod): Promise<UsageSummary>
+  getDashboardSummary(): Promise<DashboardSummary>
   listMCPTokens(): Promise<MCPTokenResponse[]>
   createMCPToken(projectId: string, input: CreateMCPTokenInput): Promise<MCPTokenCreateResponse>
   deleteMCPToken(projectId: string, tokenId: string): Promise<void>
+  // Setup
+  getSetupStatus(): Promise<{ needsSetup: boolean }>
+  completeSetup(input: SetupInput): Promise<AuthResponse>
+  // Data management
+  exportData(format: 'json' | 'sql'): Promise<void>
+  importData(data: Record<string, unknown>): Promise<{ tablesImported: number }>
+  importSdp(file: File): Promise<{ projectId: string; projectName: string; stagesImported: number }>
+  getDbStatus(): Promise<DbStatus>
+  resetDatabase(confirm: string): Promise<{ success: boolean }>
+}
+
+export interface SetupInput {
+  admin: { email: string; name: string; password: string }
+  provider?: {
+    provider: ProviderType
+    label: string
+    apiKey: string
+    defaultModel: string
+    baseUrl?: string
+  }
+}
+
+export interface DbStatus {
+  sizeBytes: number
+  tables: Array<{ name: string; rowCount: number }>
+  lastBackup: string | null
+}
+
+export interface RecentGeneration {
+  id: string
+  model: string
+  cost: number
+  tokens: number
+  durationMs: number
+  createdAt: string
+  stageNumber: number
+  stageName: string
+  stageLabel: string
+  projectId: string
+  projectName: string
+}
+
+export interface ModelUsage {
+  model: string
+  tokens: number
+  cost: number
+  count: number
+  percentage: number
+}
+
+export interface DashboardSummary {
+  totalTokens: number
+  totalCost: number
+  generationCount: number
+  avgCostPerGeneration: number
+  topModel: { model: string; percentage: number } | null
+  modelUsage: ModelUsage[]
+  dailySpending: Array<{ date: string; cost: number }>
+  recentGenerations: RecentGeneration[]
 }
 
 // Prevent concurrent refresh attempts
@@ -294,6 +354,10 @@ class HttpApiClient implements ApiClient {
     return this.fetch<UsageSummary>(`/usage?period=${period}`)
   }
 
+  getDashboardSummary() {
+    return this.fetch<DashboardSummary>('/usage/summary')
+  }
+
   listMCPTokens() {
     return this.fetch<MCPTokenResponse[]>('/mcp-tokens')
   }
@@ -363,6 +427,77 @@ class HttpApiClient implements ApiClient {
     return this.fetch<User>('/users/me', {
       method: 'PUT',
       body: JSON.stringify(data),
+    })
+  }
+
+  // Setup (public — no auth header)
+  async getSetupStatus(): Promise<{ needsSetup: boolean }> {
+    const res = await fetch(`${this.baseUrl}/setup/status`)
+    if (!res.ok) throw new Error('Failed to check setup status')
+    return res.json()
+  }
+
+  async completeSetup(input: SetupInput): Promise<AuthResponse> {
+    const res = await fetch(`${this.baseUrl}/setup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Setup failed' }))
+      throw new Error(error.error?.message || error.error || `HTTP ${res.status}`)
+    }
+    return res.json()
+  }
+
+  // Data management
+  async exportData(format: 'json' | 'sql'): Promise<void> {
+    const token = localStorage.getItem('sdos_access_token')
+    const res = await fetch(`${this.baseUrl}/admin/export?format=${format}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) throw new Error('Export failed')
+    const blob = await res.blob()
+    const ext = format === 'json' ? 'json' : 'sql.gz'
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `sdos-export.${ext}`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  importData(data: Record<string, unknown>) {
+    return this.fetch<{ tablesImported: number }>('/admin/import', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async importSdp(file: File) {
+    const token = localStorage.getItem('sdos_access_token')
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch(`${this.baseUrl}/projects/import-sdp`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    })
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'SDP import failed' }))
+      throw new Error(error.error?.message || error.error || `HTTP ${res.status}`)
+    }
+    return res.json()
+  }
+
+  getDbStatus() {
+    return this.fetch<DbStatus>('/admin/db-status')
+  }
+
+  resetDatabase(confirm: string) {
+    return this.fetch<{ success: boolean }>('/admin/db-reset', {
+      method: 'POST',
+      body: JSON.stringify({ confirm }),
     })
   }
 }
@@ -472,6 +607,33 @@ class MockApiClient implements ApiClient {
     return createMockUsageSummary()
   }
 
+  async getDashboardSummary(): Promise<DashboardSummary> {
+    const now = Date.now()
+    return {
+      totalTokens: 955000,
+      totalCost: 5.73,
+      generationCount: 42,
+      avgCostPerGeneration: 0.136,
+      topModel: { model: 'claude-sonnet-4-5', percentage: 72 },
+      modelUsage: [
+        { model: 'claude-sonnet-4-5', tokens: 680000, cost: 4.08, count: 30, percentage: 72 },
+        { model: 'gpt-4o', tokens: 210000, cost: 1.26, count: 8, percentage: 19 },
+        { model: 'deepseek-chat', tokens: 65000, cost: 0.39, count: 4, percentage: 9 },
+      ],
+      dailySpending: Array.from({ length: 7 }, (_, i) => ({
+        date: new Date(now - (6 - i) * 86400000).toISOString().split('T')[0],
+        cost: Math.random() * 0.5 + 0.1,
+      })),
+      recentGenerations: [
+        { id: 'gen-1', model: 'claude-sonnet-4-5', cost: 0.12, tokens: 18500, durationMs: 3200, createdAt: new Date(now - 120000).toISOString(), stageNumber: 2, stageName: 'dataModel', stageLabel: 'Data Model', projectId: 'mock-project-1', projectName: 'Mission Control' },
+        { id: 'gen-2', model: 'claude-sonnet-4-5', cost: 0.08, tokens: 12000, durationMs: 2100, createdAt: new Date(now - 3600000).toISOString(), stageNumber: 1, stageName: 'product', stageLabel: 'Product Definition', projectId: 'mock-project-1', projectName: 'Mission Control' },
+        { id: 'gen-3', model: 'gpt-4o', cost: 0.15, tokens: 22000, durationMs: 4500, createdAt: new Date(now - 7200000).toISOString(), stageNumber: 4, stageName: 'api', stageLabel: 'API Design', projectId: 'mock-project-2', projectName: 'E-Commerce Platform' },
+        { id: 'gen-4', model: 'claude-sonnet-4-5', cost: 0.09, tokens: 14000, durationMs: 2800, createdAt: new Date(now - 86400000).toISOString(), stageNumber: 3, stageName: 'database', stageLabel: 'Database', projectId: 'mock-project-2', projectName: 'E-Commerce Platform' },
+        { id: 'gen-5', model: 'deepseek-chat', cost: 0.03, tokens: 8000, durationMs: 1500, createdAt: new Date(now - 172800000).toISOString(), stageNumber: 5, stageName: 'stack', stageLabel: 'Tech Stack', projectId: 'mock-project-1', projectName: 'Mission Control' },
+      ],
+    }
+  }
+
   async listMCPTokens(): Promise<MCPTokenResponse[]> {
     const now = Date.now()
     return [
@@ -541,6 +703,44 @@ class MockApiClient implements ApiClient {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
+  }
+
+  async getSetupStatus(): Promise<{ needsSetup: boolean }> {
+    return { needsSetup: false }
+  }
+
+  async completeSetup(_input: SetupInput): Promise<AuthResponse> {
+    return {
+      user: { id: 'mock-user', email: 'demo@sdos.dev', name: 'Demo User', preferences: {} },
+      tokens: { accessToken: 'mock-access-token', refreshToken: 'mock-refresh-token' },
+    }
+  }
+
+  async exportData(_format: 'json' | 'sql'): Promise<void> {}
+
+  async importData(_data: Record<string, unknown>): Promise<{ tablesImported: number }> {
+    return { tablesImported: 8 }
+  }
+
+  async importSdp(_file: File): Promise<{ projectId: string; projectName: string; stagesImported: number }> {
+    return { projectId: 'mock-project', projectName: 'Imported Project', stagesImported: 9 }
+  }
+
+  async getDbStatus(): Promise<DbStatus> {
+    return {
+      sizeBytes: 52428800,
+      tables: [
+        { name: 'users', rowCount: 1 },
+        { name: 'projects', rowCount: 3 },
+        { name: 'stages', rowCount: 27 },
+        { name: 'templates', rowCount: 6 },
+      ],
+      lastBackup: new Date(Date.now() - 86400000).toISOString(),
+    }
+  }
+
+  async resetDatabase(_confirm: string): Promise<{ success: boolean }> {
+    return { success: true }
   }
 }
 

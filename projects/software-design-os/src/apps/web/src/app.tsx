@@ -10,10 +10,14 @@ import { PipelinePage } from '@/pages/pipeline-page'
 import { TemplatesPage } from '@/pages/templates-page'
 import { UsagePage } from '@/pages/usage-page'
 import { SettingsPage } from '@/pages/settings-page'
+import { SetupPage } from '@/pages/setup-page'
 
 export function App() {
   return (
     <Routes>
+      {/* Setup wizard — standalone, no auth */}
+      <Route path="setup" element={<SetupPage />} />
+
       {/* Public auth routes */}
       <Route element={<AuthLayout />}>
         <Route path="login" element={<LoginPage />} />

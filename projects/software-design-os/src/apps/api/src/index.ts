@@ -13,6 +13,9 @@ import { stageRoutes } from './routes/stages'
 import { aiProviderRoutes } from './routes/ai-providers'
 import { usageRoutes } from './routes/usage'
 import { mcpTokenRoutes, mcpTokenUserRoutes } from './routes/mcp-tokens'
+import { adminRoutes } from './routes/admin'
+import { setupRoutes } from './routes/setup'
+import { startDailyCronJob } from './lib/backup-manager'
 import type { AppEnv } from './types'
 
 const app = new Hono<AppEnv>()
@@ -35,6 +38,8 @@ app.route('/api/ai-providers', aiProviderRoutes)
 app.route('/api/usage', usageRoutes)
 app.route('/api/projects/:projectId/mcp-tokens', mcpTokenRoutes)
 app.route('/api/mcp-tokens', mcpTokenUserRoutes)
+app.route('/api/admin', adminRoutes)
+app.route('/api/setup', setupRoutes)
 
 // Health check with DB ping
 app.get('/api/health', async (c) => {
@@ -54,6 +59,9 @@ const server = serve({ fetch: app.fetch, port })
 // Disable the default Node.js request timeout so long-running AI generations aren't killed
 ;(server as import('node:http').Server).timeout = 0
 ;(server as import('node:http').Server).requestTimeout = 0
+
+// Start daily backup cron job
+startDailyCronJob()
 
 // Graceful shutdown
 const shutdown = async () => {

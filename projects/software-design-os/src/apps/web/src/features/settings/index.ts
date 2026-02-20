@@ -4,6 +4,7 @@ export { AIProviderManager } from './ai-provider-manager'
 export { MCPTokenManager } from './mcp-token-manager'
 export { UsageStats } from './usage-stats'
 export { CostAlertConfig } from './cost-alert-config'
+export { DataManagement } from './data-management'
 export {
   createMockUserProfile,
   createMockUsageSummary,
