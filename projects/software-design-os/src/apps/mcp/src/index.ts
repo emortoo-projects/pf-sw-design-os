@@ -1,86 +1,9 @@
 import 'dotenv/config'
 import { createServer as createHttpServer } from 'node:http'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import { validateToken, type AuthContext } from './auth'
+import { validateToken } from './auth'
 import { client } from './db'
-
-// Import tools
-import { getOverviewTool } from './tools/get-overview'
-import { getDataModelTool } from './tools/get-data-model'
-import { getDatabaseSchemaTool } from './tools/get-database-schema'
-import { getApiSpecTool } from './tools/get-api-spec'
-import { getStackTool } from './tools/get-stack'
-import { getDesignTokensTool } from './tools/get-design-tokens'
-import { getSectionTool } from './tools/get-section'
-import { getInfrastructureTool } from './tools/get-infrastructure'
-import { validateTool } from './tools/validate'
-
-function createMcpServer(): McpServer {
-  return new McpServer({
-    name: 'sdos-mcp',
-    version: '0.1.0',
-  })
-}
-
-/** Register all tools on a server with a fixed auth context. */
-function registerTools(server: McpServer, auth: AuthContext) {
-  // Simple stage tools (no args)
-  const simpleTools = [
-    getOverviewTool,
-    getDataModelTool,
-    getDatabaseSchemaTool,
-    getApiSpecTool,
-    getStackTool,
-    getDesignTokensTool,
-    getInfrastructureTool,
-  ]
-
-  for (const tool of simpleTools) {
-    server.tool(tool.name, tool.description, {}, async () => {
-      return tool.handler(auth)
-    })
-  }
-
-  // Section tool (has optional sectionName arg)
-  server.tool(
-    getSectionTool.name,
-    getSectionTool.description,
-    { sectionName: getSectionTool.schema.shape.sectionName },
-    async (args) => getSectionTool.handler(auth, args as { sectionName?: string }),
-  )
-
-  // Validate tool (no args, different logic)
-  server.tool(validateTool.name, validateTool.description, {}, async () => {
-    return validateTool.handler(auth)
-  })
-}
-
-// ── Stdio mode ──────────────────────────────────────────────────────────────
-
-async function startStdio() {
-  const token = process.env.MCP_TOKEN
-  if (!token) {
-    console.error('MCP_TOKEN environment variable is required for stdio mode')
-    process.exit(1)
-  }
-
-  const auth = await validateToken(token)
-  if (!auth) {
-    console.error('Invalid or expired MCP_TOKEN')
-    process.exit(1)
-  }
-
-  console.error(`Authenticated: project=${auth.projectId}`)
-
-  const server = createMcpServer()
-  registerTools(server, auth)
-
-  const transport = new StdioServerTransport()
-  await server.connect(transport)
-  console.error('MCP server running on stdio')
-}
+import { createMcpServer, registerTools } from './server'
 
 // ── HTTP mode ───────────────────────────────────────────────────────────────
 
@@ -149,16 +72,7 @@ async function startHttp() {
 
 // ── Entry point ─────────────────────────────────────────────────────────────
 
-const isStdio = process.argv.includes('--stdio')
-
-if (isStdio) {
-  startStdio().catch((err) => {
-    console.error('Failed to start stdio server:', err)
-    process.exit(1)
-  })
-} else {
-  startHttp().catch((err) => {
-    console.error('Failed to start HTTP server:', err)
-    process.exit(1)
-  })
-}
+startHttp().catch((err) => {
+  console.error('Failed to start HTTP server:', err)
+  process.exit(1)
+})

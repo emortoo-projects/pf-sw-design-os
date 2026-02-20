@@ -1,7 +1,9 @@
+import { useMemo } from 'react'
 import type { Stage, StageOutput } from '@sdos/shared'
 import { Card, CardContent } from '@/components/ui/card'
 import { usePipelineStore } from '@/stores/pipeline-store'
 import { StageInterviewWrapper } from '@/features/interview'
+import type { ValidationResult } from '@/features/stages/export-preview/types'
 import { StageHeader } from './stage-header'
 import { StageActionBar } from './stage-action-bar'
 import { LockedStageMessage } from './locked-stage-message'
@@ -41,6 +43,17 @@ export function StageEditorContainer({
   const interviewing = usePipelineStore((s) => s.isInterviewing)
   const showVersionBar = outputs && outputs.length > 1 && onActivateVersion
 
+  // Stage 9 (export) validation: extract error/warning counts from stage data
+  const exportValidation = useMemo(() => {
+    if (stage.stageNumber !== 9 || !stage.data) return null
+    const validation = (stage.data as Record<string, unknown>).validation
+    if (!Array.isArray(validation)) return null
+    const results = validation as ValidationResult[]
+    const errorCount = results.filter((r) => r.severity === 'error').length
+    const warningCount = results.filter((r) => r.severity === 'warning').length
+    return { errorCount, warningCount }
+  }, [stage.stageNumber, stage.data])
+
   return (
     <Card>
       <StageHeader stage={stage} />
@@ -74,6 +87,8 @@ export function StageEditorContainer({
                 isGenerating={isGenerating}
                 isCompleting={isCompleting}
                 isSaving={isSaving}
+                validationBlocksComplete={exportValidation ? exportValidation.errorCount > 0 : undefined}
+                validationWarningCount={exportValidation?.warningCount}
               />
             )}
           </div>

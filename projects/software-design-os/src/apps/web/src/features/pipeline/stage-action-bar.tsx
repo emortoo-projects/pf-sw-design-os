@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Stage } from '@sdos/shared'
-import { Sparkles, Save, RotateCcw, CheckCircle, Loader2 } from 'lucide-react'
+import { Sparkles, Save, RotateCcw, CheckCircle, Loader2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
@@ -37,6 +37,10 @@ interface StageActionBarProps {
   isGenerating: boolean
   isCompleting: boolean
   isSaving: boolean
+  /** When true, validation errors exist and completion should be blocked. */
+  validationBlocksComplete?: boolean
+  /** Number of validation warnings (shown in confirmation dialog). */
+  validationWarningCount?: number
 }
 
 export function StageActionBar({
@@ -48,13 +52,24 @@ export function StageActionBar({
   isGenerating,
   isCompleting,
   isSaving,
+  validationBlocksComplete,
+  validationWarningCount = 0,
 }: StageActionBarProps) {
+  const [showWarningConfirm, setShowWarningConfirm] = useState(false)
   const canGenerate = stage.status === 'active' || stage.status === 'review'
   const canSave = stage.status === 'review'
-  const canComplete = stage.status === 'review'
+  const canComplete = stage.status === 'review' && !validationBlocksComplete
   const canRevert = stage.status === 'review' || stage.status === 'complete'
   const elapsed = useElapsedSeconds(isGenerating)
   const isHeavy = HEAVY_STAGES.has(stage.stageName)
+
+  const handleCompleteClick = () => {
+    if (validationWarningCount > 0) {
+      setShowWarningConfirm(true)
+    } else {
+      onComplete()
+    }
+  }
 
   return (
     <>
@@ -108,7 +123,7 @@ export function StageActionBar({
           <Button
             variant="default"
             size="sm"
-            onClick={onComplete}
+            onClick={handleCompleteClick}
             disabled={!canComplete || isCompleting}
           >
             {isCompleting ? <Loader2 className="animate-spin" /> : <CheckCircle />}
@@ -116,6 +131,35 @@ export function StageActionBar({
           </Button>
         </div>
       </div>
+
+      {/* Warning confirmation dialog for stage completion */}
+      {showWarningConfirm && (
+        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-amber-800">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            Complete with {validationWarningCount} warning{validationWarningCount !== 1 ? 's' : ''}?
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowWarningConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                setShowWarningConfirm(false)
+                onComplete()
+              }}
+            >
+              Complete Anyway
+            </Button>
+          </div>
+        </div>
+      )}
     </>
   )
 }

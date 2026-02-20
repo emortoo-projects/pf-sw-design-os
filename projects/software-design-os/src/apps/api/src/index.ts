@@ -15,6 +15,8 @@ import { usageRoutes } from './routes/usage'
 import { mcpTokenRoutes, mcpTokenUserRoutes } from './routes/mcp-tokens'
 import { adminRoutes } from './routes/admin'
 import { setupRoutes } from './routes/setup'
+import { contractRoutes } from './routes/contracts'
+import { automationRoutes } from './routes/automation'
 import { startDailyCronJob } from './lib/backup-manager'
 import type { AppEnv } from './types'
 
@@ -40,6 +42,8 @@ app.route('/api/projects/:projectId/mcp-tokens', mcpTokenRoutes)
 app.route('/api/mcp-tokens', mcpTokenUserRoutes)
 app.route('/api/admin', adminRoutes)
 app.route('/api/setup', setupRoutes)
+app.route('/api/projects/:projectId/contracts', contractRoutes)
+app.route('/api/projects/:projectId/automation', automationRoutes)
 
 // Health check with DB ping
 app.get('/api/health', async (c) => {

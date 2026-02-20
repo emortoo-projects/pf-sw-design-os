@@ -10,6 +10,8 @@ import { PipelinePage } from '@/pages/pipeline-page'
 import { TemplatesPage } from '@/pages/templates-page'
 import { UsagePage } from '@/pages/usage-page'
 import { SettingsPage } from '@/pages/settings-page'
+import { ContractsPage } from '@/pages/contracts-page'
+import { TasksPage } from '@/pages/tasks-page'
 import { SetupPage } from '@/pages/setup-page'
 
 export function App() {
@@ -30,6 +32,8 @@ export function App() {
           <Route index element={<DashboardPage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:id" element={<PipelinePage />} />
+          <Route path="projects/:id/contracts" element={<ContractsPage />} />
+          <Route path="tasks" element={<TasksPage />} />
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="usage" element={<UsagePage />} />
           <Route path="settings" element={<SettingsPage />} />

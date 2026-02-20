@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
-import { AlertCircle, X } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { AlertCircle, X, ListChecks } from 'lucide-react'
 import type { ProjectWithStages } from '@sdos/shared'
 import { usePipelineStore } from '@/stores/pipeline-store'
 import { useStageMutations } from '@/hooks/use-stage-mutations'
 import { useStage } from '@/hooks/use-stage'
+import { Button } from '@/components/ui/button'
 import { assembleSDPFromStages, buildStageInputsFromStages } from '@/features/stages/export-preview'
 import { PipelineProgressBar } from './pipeline-progress-bar'
 import { StageEditorContainer } from './stage-editor-container'
@@ -18,6 +20,7 @@ export function PipelineView({ project }: PipelineViewProps) {
   const { activeStageNumber, setActiveStageNumber } = usePipelineStore()
   const mutations = useStageMutations(project.id)
   const { data: stageWithOutputs } = useStage(project.id, activeStageNumber)
+  const navigate = useNavigate()
 
   const activeStage = project.stages.find((s) => s.stageNumber === activeStageNumber)
   const outputs = stageWithOutputs?.outputs ?? []
@@ -72,13 +75,28 @@ export function PipelineView({ project }: PipelineViewProps) {
     mutations.revert.mutate({ stageNumber: activeStage.stageNumber })
   }
 
+  const allDesignStagesComplete = project.stages
+    .filter((s) => s.stageNumber >= 1 && s.stageNumber <= 8)
+    .every((s) => s.status === 'complete')
+
   if (!activeStage) return null
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">{project.name}</h1>
-        <p className="text-sm text-zinc-500">{project.description}</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900">{project.name}</h1>
+          <p className="text-sm text-zinc-500">{project.description}</p>
+        </div>
+        {allDesignStagesComplete && (
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/projects/${project.id}/contracts`)}
+          >
+            <ListChecks className="h-4 w-4" />
+            Tasks
+          </Button>
+        )}
       </div>
 
       <PipelineProgressBar

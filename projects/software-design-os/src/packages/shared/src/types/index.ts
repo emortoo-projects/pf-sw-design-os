@@ -1,4 +1,5 @@
 export type { User } from './user'
+export type { ContractType, ContractStatus, ContractEventType, ContractEvent, PromptContract } from './contract'
 export type {
   AuthTokens,
   LoginRequest,
@@ -18,3 +19,13 @@ export type {
   RevertResponse,
   ActivateOutputResponse,
 } from './api-responses'
+export type {
+  BatchRunStatus,
+  TrustLevel,
+  QualityGates,
+  Boundaries,
+  BatchLimits,
+  AutomationConfig,
+  QualityReport,
+  BatchRun,
+} from './automation'

@@ -46,6 +46,36 @@ export const templateCategoryEnum = pgEnum('template_category', [
 ])
 export const exportFormatEnum = pgEnum('export_format', ['folder', 'zip'])
 export const validationStatusEnum = pgEnum('validation_status', ['valid', 'warnings', 'errors'])
+export const contractTypeEnum = pgEnum('contract_type', [
+  'setup',
+  'model',
+  'api',
+  'component',
+  'page',
+  'integration',
+  'config',
+])
+export const contractStatusEnum = pgEnum('contract_status', [
+  'backlog',
+  'ready',
+  'in_progress',
+  'in_review',
+  'done',
+])
+export const contractEventTypeEnum = pgEnum('contract_event_type', [
+  'started',
+  'submitted',
+  'approved',
+  'changes_requested',
+  'rejected',
+  'comment',
+])
+export const batchRunStatusEnum = pgEnum('batch_run_status', [
+  'running',
+  'completed',
+  'stopped',
+  'failed',
+])
 
 // ── Tables ───────────────────────────────────────────────────────────────────
 
@@ -109,6 +139,7 @@ export const projects = pgTable(
     templateId: uuid('template_id').references(() => templates.id),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull().$onUpdate(() => new Date()),
+    automationConfig: jsonb('automation_config'),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (table) => [
@@ -230,6 +261,89 @@ export const mcpTokens = pgTable(
   ],
 )
 
+export const batchRuns = pgTable(
+  'batch_runs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    status: batchRunStatusEnum('status').notNull(),
+    config: jsonb('config'),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    tasksAttempted: integer('tasks_attempted').default(0).notNull(),
+    tasksCompleted: integer('tasks_completed').default(0).notNull(),
+    tasksFailed: integer('tasks_failed').default(0).notNull(),
+    tasksParkedForReview: integer('tasks_parked_for_review').default(0).notNull(),
+    report: jsonb('report'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_batch_runs_project').on(table.projectId),
+  ],
+)
+
+export const promptContracts = pgTable(
+  'prompt_contracts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    type: contractTypeEnum('type').notNull(),
+    priority: integer('priority').notNull(),
+    status: contractStatusEnum('status').default('backlog').notNull(),
+    dependencies: jsonb('dependencies').default([]).notNull(),
+    description: text('description'),
+    userStory: text('user_story'),
+    stack: jsonb('stack'),
+    targetFiles: jsonb('target_files'),
+    referenceFiles: jsonb('reference_files'),
+    constraints: jsonb('constraints'),
+    doNotTouch: jsonb('do_not_touch'),
+    patterns: jsonb('patterns'),
+    dataModels: jsonb('data_models'),
+    apiEndpoints: jsonb('api_endpoints'),
+    designTokens: jsonb('design_tokens'),
+    componentSpec: jsonb('component_spec'),
+    acceptanceCriteria: jsonb('acceptance_criteria'),
+    testCases: jsonb('test_cases'),
+    generatedPrompt: text('generated_prompt'),
+    reviewSummary: text('review_summary'),
+    reviewFeedback: text('review_feedback'),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    batchRunId: uuid('batch_run_id').references(() => batchRuns.id),
+    qualityReport: jsonb('quality_report'),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewNotes: text('review_notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull().$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index('idx_contracts_project').on(table.projectId),
+    index('idx_contracts_project_status').on(table.projectId, table.status),
+  ],
+)
+
+export const contractEvents = pgTable(
+  'contract_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    contractId: uuid('contract_id')
+      .notNull()
+      .references(() => promptContracts.id, { onDelete: 'cascade' }),
+    type: contractEventTypeEnum('type').notNull(),
+    actor: varchar('actor', { length: 50 }).notNull(),
+    message: text('message'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('idx_contract_events_contract').on(table.contractId)],
+)
+
 export const refreshTokens = pgTable(
   'refresh_tokens',
   {
@@ -271,6 +385,8 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   stages: many(stages),
   exportPackages: many(exportPackages),
   mcpTokens: many(mcpTokens),
+  promptContracts: many(promptContracts),
+  batchRuns: many(batchRuns),
 }))
 
 export const stagesRelations = relations(stages, ({ one, many }) => ({
@@ -302,6 +418,21 @@ export const exportPackagesRelations = relations(exportPackages, ({ one }) => ({
 export const mcpTokensRelations = relations(mcpTokens, ({ one }) => ({
   user: one(users, { fields: [mcpTokens.userId], references: [users.id] }),
   project: one(projects, { fields: [mcpTokens.projectId], references: [projects.id] }),
+}))
+
+export const batchRunsRelations = relations(batchRuns, ({ one, many }) => ({
+  project: one(projects, { fields: [batchRuns.projectId], references: [projects.id] }),
+  contracts: many(promptContracts),
+}))
+
+export const promptContractsRelations = relations(promptContracts, ({ one, many }) => ({
+  project: one(projects, { fields: [promptContracts.projectId], references: [projects.id] }),
+  batchRun: one(batchRuns, { fields: [promptContracts.batchRunId], references: [batchRuns.id] }),
+  events: many(contractEvents),
+}))
+
+export const contractEventsRelations = relations(contractEvents, ({ one }) => ({
+  contract: one(promptContracts, { fields: [contractEvents.contractId], references: [promptContracts.id] }),
 }))
 
 export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({

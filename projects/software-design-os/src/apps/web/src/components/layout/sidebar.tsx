@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Home, FolderOpen, LayoutTemplate, BarChart3, Settings, PanelLeftClose, PanelLeft, LogOut } from 'lucide-react'
+import { Home, FolderOpen, ListChecks, LayoutTemplate, BarChart3, Settings, PanelLeftClose, PanelLeft, LogOut } from 'lucide-react'
 import { SidebarNavItem } from './sidebar-nav-item'
 import { cn } from '@/lib/utils'
 import { useAuth, useLogout } from '@/hooks/use-auth'
@@ -7,6 +7,7 @@ import { useAuth, useLogout } from '@/hooks/use-auth'
 const navItems = [
   { label: 'Dashboard', icon: Home, to: '/' },
   { label: 'Projects', icon: FolderOpen, to: '/projects' },
+  { label: 'Tasks', icon: ListChecks, to: '/tasks' },
   { label: 'Templates', icon: LayoutTemplate, to: '/templates' },
   { label: 'Usage', icon: BarChart3, to: '/usage' },
   { label: 'Settings', icon: Settings, to: '/settings' },

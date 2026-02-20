@@ -8,6 +8,12 @@ import type {
   Stage,
   User,
   AuthResponse,
+  PromptContract,
+  ContractStatus,
+  ContractEvent,
+  AutomationConfig,
+  BatchRun,
+  QualityReport,
 } from '@sdos/shared'
 import type { UsageSummary, UsagePeriod } from '@/features/settings/types'
 
@@ -121,6 +127,29 @@ export interface ApiClient {
   listMCPTokens(): Promise<MCPTokenResponse[]>
   createMCPToken(projectId: string, input: CreateMCPTokenInput): Promise<MCPTokenCreateResponse>
   deleteMCPToken(projectId: string, tokenId: string): Promise<void>
+  // Contracts
+  listContracts(projectId: string): Promise<PromptContract[]>
+  getContract(projectId: string, contractId: string): Promise<PromptContract>
+  generateContracts(projectId: string): Promise<{ contracts: PromptContract[]; count: number }>
+  updateContract(projectId: string, contractId: string, patch: { status?: ContractStatus }): Promise<PromptContract>
+  markContractDone(projectId: string, contractId: string): Promise<PromptContract>
+  getNextContract(projectId: string): Promise<PromptContract | null>
+  generateClaudeMd(projectId: string): Promise<{ content: string }>
+  startContract(projectId: string, contractId: string): Promise<PromptContract>
+  submitContract(projectId: string, contractId: string, summary: string): Promise<PromptContract>
+  approveContract(projectId: string, contractId: string): Promise<PromptContract>
+  requestChanges(projectId: string, contractId: string, feedback: string): Promise<PromptContract>
+  listContractEvents(projectId: string, contractId: string): Promise<ContractEvent[]>
+  // Automation
+  getAutomationConfig(projectId: string): Promise<AutomationConfig | null>
+  saveAutomationConfig(projectId: string, config: AutomationConfig): Promise<AutomationConfig | null>
+  startBatchRun(projectId: string): Promise<BatchRun>
+  getBatchRun(projectId: string, batchId: string): Promise<BatchRun>
+  getLatestBatchRun(projectId: string): Promise<BatchRun | null>
+  stopBatchRun(projectId: string, batchId: string): Promise<BatchRun>
+  runQualityGates(projectId: string, taskId: string, report: QualityReport): Promise<PromptContract>
+  batchApprove(projectId: string): Promise<{ approved: number; total: number }>
+  generateWorkflowPrompt(projectId: string): Promise<{ prompt: string }>
   // Setup
   getSetupStatus(): Promise<{ needsSetup: boolean }>
   completeSetup(input: SetupInput): Promise<AuthResponse>
@@ -320,6 +349,123 @@ class HttpApiClient implements ApiClient {
       `/projects/${projectId}/stages/${stageNumber}/outputs/${version}/activate`,
       { method: 'POST' },
     )
+  }
+
+  listContracts(projectId: string) {
+    return this.fetch<PromptContract[]>(`/projects/${projectId}/contracts`)
+  }
+
+  getContract(projectId: string, contractId: string) {
+    return this.fetch<PromptContract>(`/projects/${projectId}/contracts/${contractId}`)
+  }
+
+  generateContracts(projectId: string) {
+    return this.fetch<{ contracts: PromptContract[]; count: number }>(`/projects/${projectId}/contracts/generate`, {
+      method: 'POST',
+    })
+  }
+
+  updateContract(projectId: string, contractId: string, patch: { status?: ContractStatus }) {
+    return this.fetch<PromptContract>(`/projects/${projectId}/contracts/${contractId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    })
+  }
+
+  markContractDone(projectId: string, contractId: string) {
+    return this.fetch<PromptContract>(`/projects/${projectId}/contracts/${contractId}/mark-done`, {
+      method: 'POST',
+    })
+  }
+
+  getNextContract(projectId: string) {
+    return this.fetch<PromptContract | null>(`/projects/${projectId}/contracts/next`)
+  }
+
+  generateClaudeMd(projectId: string) {
+    return this.fetch<{ content: string }>(`/projects/${projectId}/contracts/claude-md`, {
+      method: 'POST',
+    })
+  }
+
+  startContract(projectId: string, contractId: string) {
+    return this.fetch<PromptContract>(`/projects/${projectId}/contracts/${contractId}/start`, {
+      method: 'POST',
+    })
+  }
+
+  submitContract(projectId: string, contractId: string, summary: string) {
+    return this.fetch<PromptContract>(`/projects/${projectId}/contracts/${contractId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ summary }),
+    })
+  }
+
+  approveContract(projectId: string, contractId: string) {
+    return this.fetch<PromptContract>(`/projects/${projectId}/contracts/${contractId}/approve`, {
+      method: 'POST',
+    })
+  }
+
+  requestChanges(projectId: string, contractId: string, feedback: string) {
+    return this.fetch<PromptContract>(`/projects/${projectId}/contracts/${contractId}/request-changes`, {
+      method: 'POST',
+      body: JSON.stringify({ feedback }),
+    })
+  }
+
+  listContractEvents(projectId: string, contractId: string) {
+    return this.fetch<ContractEvent[]>(`/projects/${projectId}/contracts/${contractId}/events`)
+  }
+
+  getAutomationConfig(projectId: string) {
+    return this.fetch<AutomationConfig | null>(`/projects/${projectId}/automation`)
+  }
+
+  saveAutomationConfig(projectId: string, config: AutomationConfig) {
+    return this.fetch<AutomationConfig | null>(`/projects/${projectId}/automation`, {
+      method: 'PATCH',
+      body: JSON.stringify(config),
+    })
+  }
+
+  startBatchRun(projectId: string) {
+    return this.fetch<BatchRun>(`/projects/${projectId}/automation/batch/start`, {
+      method: 'POST',
+    })
+  }
+
+  getBatchRun(projectId: string, batchId: string) {
+    return this.fetch<BatchRun>(`/projects/${projectId}/automation/batch/${batchId}`)
+  }
+
+  getLatestBatchRun(projectId: string) {
+    return this.fetch<BatchRun | null>(`/projects/${projectId}/automation/batch/latest`)
+  }
+
+  stopBatchRun(projectId: string, batchId: string) {
+    return this.fetch<BatchRun>(`/projects/${projectId}/automation/batch/${batchId}/stop`, {
+      method: 'POST',
+    })
+  }
+
+  runQualityGates(projectId: string, taskId: string, report: QualityReport) {
+    return this.fetch<PromptContract>(`/projects/${projectId}/automation/tasks/${taskId}/quality-gates`, {
+      method: 'POST',
+      body: JSON.stringify(report),
+    })
+  }
+
+  batchApprove(projectId: string) {
+    return this.fetch<{ approved: number; total: number }>(`/projects/${projectId}/automation/batch-approve`, {
+      method: 'POST',
+    })
+  }
+
+  generateWorkflowPrompt(projectId: string) {
+    return this.fetch<{ prompt: string }>(`/projects/${projectId}/automation/generate-workflow-prompt`, {
+      method: 'POST',
+    })
   }
 
   listAIProviders() {
@@ -578,6 +724,187 @@ class MockApiClient implements ApiClient {
         createdAt: new Date().toISOString(),
       },
     }
+  }
+
+  async listContracts(_projectId: string): Promise<PromptContract[]> {
+    return []
+  }
+
+  async getContract(_projectId: string, contractId: string): Promise<PromptContract> {
+    return {
+      id: contractId, projectId: _projectId, title: 'Mock Contract', type: 'setup', priority: 1,
+      status: 'ready', dependencies: [], description: 'Mock', userStory: null, stack: null,
+      targetFiles: null, referenceFiles: null, constraints: null, doNotTouch: null, patterns: null,
+      dataModels: null, apiEndpoints: null, designTokens: null, componentSpec: null,
+      acceptanceCriteria: null, testCases: null, generatedPrompt: null,
+      reviewSummary: null, reviewFeedback: null, startedAt: null, completedAt: null,
+      batchRunId: null, qualityReport: null, submittedAt: null, reviewedAt: null, reviewNotes: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }
+  }
+
+  async generateContracts(_projectId: string): Promise<{ contracts: PromptContract[]; count: number }> {
+    return { contracts: [], count: 0 }
+  }
+
+  async updateContract(_projectId: string, contractId: string, _patch: { status?: ContractStatus }): Promise<PromptContract> {
+    return {
+      id: contractId, projectId: _projectId, title: 'Mock Contract', type: 'setup', priority: 1,
+      status: _patch.status ?? 'ready', dependencies: [], description: 'Mock', userStory: null,
+      stack: null, targetFiles: null, referenceFiles: null, constraints: null, doNotTouch: null,
+      patterns: null, dataModels: null, apiEndpoints: null, designTokens: null, componentSpec: null,
+      acceptanceCriteria: null, testCases: null, generatedPrompt: null,
+      reviewSummary: null, reviewFeedback: null, startedAt: null, completedAt: null,
+      batchRunId: null, qualityReport: null, submittedAt: null, reviewedAt: null, reviewNotes: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }
+  }
+
+  async markContractDone(_projectId: string, contractId: string): Promise<PromptContract> {
+    return {
+      id: contractId, projectId: _projectId, title: 'Mock Contract', type: 'setup', priority: 1,
+      status: 'done', dependencies: [], description: 'Mock', userStory: null, stack: null,
+      targetFiles: null, referenceFiles: null, constraints: null, doNotTouch: null, patterns: null,
+      dataModels: null, apiEndpoints: null, designTokens: null, componentSpec: null,
+      acceptanceCriteria: null, testCases: null, generatedPrompt: null,
+      reviewSummary: null, reviewFeedback: null, startedAt: null,
+      completedAt: new Date().toISOString(),
+      batchRunId: null, qualityReport: null, submittedAt: null, reviewedAt: null, reviewNotes: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }
+  }
+
+  async getNextContract(_projectId: string): Promise<PromptContract | null> {
+    return null
+  }
+
+  async generateClaudeMd(_projectId: string): Promise<{ content: string }> {
+    return { content: '# Mock Project\n\nGenerated CLAUDE.md content' }
+  }
+
+  async startContract(_projectId: string, contractId: string): Promise<PromptContract> {
+    return {
+      id: contractId, projectId: _projectId, title: 'Mock Contract', type: 'setup', priority: 1,
+      status: 'in_progress', dependencies: [], description: 'Mock', userStory: null, stack: null,
+      targetFiles: null, referenceFiles: null, constraints: null, doNotTouch: null, patterns: null,
+      dataModels: null, apiEndpoints: null, designTokens: null, componentSpec: null,
+      acceptanceCriteria: null, testCases: null, generatedPrompt: null,
+      reviewSummary: null, reviewFeedback: null, startedAt: new Date().toISOString(),
+      completedAt: null,
+      batchRunId: null, qualityReport: null, submittedAt: null, reviewedAt: null, reviewNotes: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }
+  }
+
+  async submitContract(_projectId: string, contractId: string, summary: string): Promise<PromptContract> {
+    return {
+      id: contractId, projectId: _projectId, title: 'Mock Contract', type: 'setup', priority: 1,
+      status: 'in_review', dependencies: [], description: 'Mock', userStory: null, stack: null,
+      targetFiles: null, referenceFiles: null, constraints: null, doNotTouch: null, patterns: null,
+      dataModels: null, apiEndpoints: null, designTokens: null, componentSpec: null,
+      acceptanceCriteria: null, testCases: null, generatedPrompt: null,
+      reviewSummary: summary, reviewFeedback: null, startedAt: new Date().toISOString(),
+      completedAt: null,
+      batchRunId: null, qualityReport: null, submittedAt: null, reviewedAt: null, reviewNotes: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }
+  }
+
+  async approveContract(_projectId: string, contractId: string): Promise<PromptContract> {
+    return {
+      id: contractId, projectId: _projectId, title: 'Mock Contract', type: 'setup', priority: 1,
+      status: 'done', dependencies: [], description: 'Mock', userStory: null, stack: null,
+      targetFiles: null, referenceFiles: null, constraints: null, doNotTouch: null, patterns: null,
+      dataModels: null, apiEndpoints: null, designTokens: null, componentSpec: null,
+      acceptanceCriteria: null, testCases: null, generatedPrompt: null,
+      reviewSummary: null, reviewFeedback: null, startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      batchRunId: null, qualityReport: null, submittedAt: null, reviewedAt: null, reviewNotes: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }
+  }
+
+  async requestChanges(_projectId: string, contractId: string, feedback: string): Promise<PromptContract> {
+    return {
+      id: contractId, projectId: _projectId, title: 'Mock Contract', type: 'setup', priority: 1,
+      status: 'in_progress', dependencies: [], description: 'Mock', userStory: null, stack: null,
+      targetFiles: null, referenceFiles: null, constraints: null, doNotTouch: null, patterns: null,
+      dataModels: null, apiEndpoints: null, designTokens: null, componentSpec: null,
+      acceptanceCriteria: null, testCases: null, generatedPrompt: null,
+      reviewSummary: null, reviewFeedback: feedback, startedAt: new Date().toISOString(),
+      completedAt: null,
+      batchRunId: null, qualityReport: null, submittedAt: null, reviewedAt: null, reviewNotes: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }
+  }
+
+  async listContractEvents(_projectId: string, _contractId: string): Promise<ContractEvent[]> {
+    return []
+  }
+
+  async getAutomationConfig(_projectId: string): Promise<AutomationConfig | null> {
+    return {
+      trustLevel: 'semi_auto',
+      qualityGates: { typescriptCompiles: true, testsPass: true, lintClean: false, noNewWarnings: false },
+      boundaries: { protectEnvFiles: true, protectConfigFiles: true, protectedPaths: [] },
+      batchLimits: { maxTasks: 10, maxConsecutiveFailures: 3 },
+    }
+  }
+
+  async saveAutomationConfig(_projectId: string, config: AutomationConfig): Promise<AutomationConfig | null> {
+    return config
+  }
+
+  async startBatchRun(_projectId: string): Promise<BatchRun> {
+    return {
+      id: `batch-${Date.now()}`, projectId: _projectId, status: 'running',
+      config: null, startedAt: new Date().toISOString(), completedAt: null,
+      tasksAttempted: 0, tasksCompleted: 0, tasksFailed: 0, tasksParkedForReview: 0,
+      report: null, createdAt: new Date().toISOString(),
+    }
+  }
+
+  async getBatchRun(_projectId: string, batchId: string): Promise<BatchRun> {
+    return {
+      id: batchId, projectId: _projectId, status: 'running',
+      config: null, startedAt: new Date().toISOString(), completedAt: null,
+      tasksAttempted: 3, tasksCompleted: 2, tasksFailed: 0, tasksParkedForReview: 1,
+      report: null, createdAt: new Date().toISOString(),
+    }
+  }
+
+  async getLatestBatchRun(_projectId: string): Promise<BatchRun | null> {
+    return null
+  }
+
+  async stopBatchRun(_projectId: string, batchId: string): Promise<BatchRun> {
+    return {
+      id: batchId, projectId: _projectId, status: 'stopped',
+      config: null, startedAt: new Date().toISOString(), completedAt: new Date().toISOString(),
+      tasksAttempted: 3, tasksCompleted: 2, tasksFailed: 0, tasksParkedForReview: 1,
+      report: null, createdAt: new Date().toISOString(),
+    }
+  }
+
+  async runQualityGates(_projectId: string, contractId: string, _report: QualityReport): Promise<PromptContract> {
+    return {
+      id: contractId, projectId: _projectId, title: 'Mock Contract', type: 'setup', priority: 1,
+      status: 'in_review', dependencies: [], description: 'Mock', userStory: null, stack: null,
+      targetFiles: null, referenceFiles: null, constraints: null, doNotTouch: null, patterns: null,
+      dataModels: null, apiEndpoints: null, designTokens: null, componentSpec: null,
+      acceptanceCriteria: null, testCases: null, generatedPrompt: null,
+      reviewSummary: null, reviewFeedback: null, startedAt: null, completedAt: null,
+      batchRunId: null, qualityReport: null, submittedAt: null, reviewedAt: null, reviewNotes: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }
+  }
+
+  async batchApprove(_projectId: string): Promise<{ approved: number; total: number }> {
+    return { approved: 0, total: 0 }
+  }
+
+  async generateWorkflowPrompt(_projectId: string): Promise<{ prompt: string }> {
+    return { prompt: '# Mock Workflow Prompt\n\nUse SDOS MCP tools to implement contracts autonomously.' }
   }
 
   async listAIProviders(): Promise<AIProvider[]> {
