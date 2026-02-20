@@ -19,6 +19,12 @@ export function useStageMutations(projectId: string) {
       invalidateProject()
       invalidateStage(variables.stageNumber)
     },
+    onError: (error, variables) => {
+      console.error(`[generate] Stage ${variables.stageNumber} failed:`, error.message)
+      // Also refetch to pick up reverted status
+      invalidateProject()
+      invalidateStage(variables.stageNumber)
+    },
   })
 
   const save = useMutation({
@@ -45,5 +51,14 @@ export function useStageMutations(projectId: string) {
     },
   })
 
-  return { generate, save, complete, revert }
+  const activateVersion = useMutation({
+    mutationFn: ({ stageNumber, version }: { stageNumber: number; version: number }) =>
+      apiClient.activateOutputVersion(projectId, stageNumber, version),
+    onSuccess: (_data, variables) => {
+      invalidateProject()
+      invalidateStage(variables.stageNumber)
+    },
+  })
+
+  return { generate, save, complete, revert, activateVersion }
 }

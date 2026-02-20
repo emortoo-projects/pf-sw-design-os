@@ -26,3 +26,8 @@ export interface RevertResponse {
   stage: Stage
   lockedStages: Stage[]
 }
+
+export interface ActivateOutputResponse {
+  stage: Stage
+  output: StageOutput
+}

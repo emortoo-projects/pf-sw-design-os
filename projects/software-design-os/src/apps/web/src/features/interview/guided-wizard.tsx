@@ -123,8 +123,9 @@ export function GuidedWizard({
         </div>
       )}
 
-      {/* Current step */}
+      {/* Current step — key forces remount so stateful inputs reset */}
       <InterviewStep
+        key={currentQuestion.id}
         question={currentQuestion}
         value={answers[currentQuestion.id]}
         onChange={handleAnswerChange}

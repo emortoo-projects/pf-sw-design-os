@@ -1,18 +1,22 @@
 import { useState, useRef, useEffect } from 'react'
-import { Download, Copy, Check, AlertTriangle } from 'lucide-react'
+import { Download, Copy, Check, AlertTriangle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { SDPManifest, ExportFormat } from './types'
+import type { SDPManifest, SDPFolderNode, ExportFormat } from './types'
 import { formatBytes } from './types'
+import { downloadAsZip } from './download-sdp'
 
 interface ExportActionsProps {
   manifest: SDPManifest
+  tree: SDPFolderNode
+  projectName: string
   totalSizeBytes: number
   validationHasErrors: boolean
 }
 
-export function ExportActions({ manifest, totalSizeBytes, validationHasErrors }: ExportActionsProps) {
+export function ExportActions({ manifest, tree, projectName, totalSizeBytes, validationHasErrors }: ExportActionsProps) {
   const [format, setFormat] = useState<ExportFormat>('zip')
   const [copied, setCopied] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -29,6 +33,15 @@ export function ExportActions({ manifest, totalSizeBytes, validationHasErrors }:
       timeoutRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {
       // Clipboard API may not be available
+    }
+  }
+
+  async function handleDownload() {
+    setIsDownloading(true)
+    try {
+      await downloadAsZip(tree, projectName)
+    } finally {
+      setIsDownloading(false)
     }
   }
 
@@ -53,13 +66,15 @@ export function ExportActions({ manifest, totalSizeBytes, validationHasErrors }:
         <Button
           variant="default"
           size="sm"
-          disabled={validationHasErrors}
-          onClick={() => {
-            // Mock download action — in production this would trigger the real export
-          }}
+          disabled={validationHasErrors || isDownloading}
+          onClick={handleDownload}
         >
-          <Download className="h-3.5 w-3.5" />
-          Download {format === 'zip' ? '.zip' : 'folder'}
+          {isDownloading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Download className="h-3.5 w-3.5" />
+          )}
+          {isDownloading ? 'Downloading...' : `Download .zip`}
         </Button>
 
         <Button variant="ghost" size="sm" onClick={handleCopyManifest}>

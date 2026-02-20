@@ -1160,18 +1160,31 @@ export function createMockStage(stageNumber: number, statusOverride?: StageStatu
   }
 }
 
-export function createMockProject(id: string): ProjectWithStages {
+export function createMockProject(id: string, currentStage = 2): ProjectWithStages {
+  const stages = STAGE_CONFIGS.map((config, i) => {
+    const stageNum = i + 1
+    let status: StageStatus
+    if (stageNum < currentStage) {
+      status = 'complete'
+    } else if (stageNum === currentStage) {
+      status = 'active'
+    } else {
+      status = 'locked'
+    }
+    return createMockStage(stageNum, status)
+  })
+
   return {
     id,
     userId: 'mock-user-1',
     name: 'My Software Project',
     slug: 'my-software-project',
     description: 'A sample project to demonstrate the pipeline view',
-    currentStage: 2,
+    currentStage,
     status: 'active',
     createdAt: yesterday,
     updatedAt: now,
-    stages: STAGE_CONFIGS.map((_, i) => createMockStage(i + 1)),
+    stages,
   }
 }
 
@@ -1187,9 +1200,20 @@ export function createMockStageWithOutputs(stageNumber: number): StageWithOutput
             format: 'json',
             content: JSON.stringify(stage.data ?? { stageNumber, generated: true }),
             generatedBy: 'ai',
-            aiGenerationId: `gen-${stageNumber}`,
-            isActive: true,
+            aiGenerationId: `gen-${stageNumber}-1`,
+            isActive: false,
             createdAt: yesterday,
+          },
+          {
+            id: `output-${stageNumber}-2`,
+            stageId: stage.id,
+            version: 2,
+            format: 'json',
+            content: JSON.stringify(stage.data ?? { stageNumber, generated: true, version: 2 }),
+            generatedBy: 'ai',
+            aiGenerationId: `gen-${stageNumber}-2`,
+            isActive: true,
+            createdAt: now,
           },
         ]
       : []

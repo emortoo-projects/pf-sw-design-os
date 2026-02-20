@@ -9,7 +9,9 @@ import type {
 } from './types'
 import { generateId } from './types'
 
-interface StageInputs {
+import type { Stage } from '@sdos/shared'
+
+export interface StageInputs {
   product: Record<string, unknown>
   dataModel: Record<string, unknown>
   database: Record<string, unknown>
@@ -18,6 +20,32 @@ interface StageInputs {
   design: Record<string, unknown>
   sections: Record<string, unknown>
   infrastructure: Record<string, unknown>
+}
+
+type InputStageName = keyof StageInputs
+
+const REQUIRED_STAGE_NAMES: InputStageName[] = [
+  'product', 'dataModel', 'database', 'api',
+  'stack', 'design', 'sections', 'infrastructure',
+]
+
+/**
+ * Maps Stage[] (stages 1-8) into StageInputs for assembleSDPFromStages().
+ * Returns null if any required stage is missing data.
+ */
+export function buildStageInputsFromStages(stages: Stage[]): StageInputs | null {
+  const inputs: Partial<StageInputs> = {}
+  for (const name of REQUIRED_STAGE_NAMES) {
+    const stage = stages.find((s) => s.stageName === name)
+    // Require real generated/edited data — ignore interview-only data
+    const hasRealData =
+      !!stage?.data &&
+      Object.keys(stage.data).length > 0 &&
+      !('_interviewAnswers' in stage.data)
+    if (!hasRealData) return null
+    inputs[name] = stage!.data
+  }
+  return inputs as StageInputs
 }
 
 function makeFile(
@@ -76,7 +104,7 @@ function buildFileTree(stages: StageInputs): SDPFolderNode {
   if (Array.isArray(sectionsData.sections)) {
     for (const section of sectionsData.sections) {
       const name = section.name ?? section.id ?? 'unnamed'
-      const slug = name.toLowerCase().replace(/\s+/g, '-')
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'unnamed'
       sectionChildren.push(
         makeFile(`${slug}.json`, 'json', JSON.stringify(section, null, 2)),
       )

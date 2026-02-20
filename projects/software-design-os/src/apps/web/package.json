@@ -13,6 +13,7 @@
     "@sdos/shared": "workspace:*",
     "@tanstack/react-query": "^5.65.0",
     "clsx": "^2.1.0",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.474.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -165,8 +165,13 @@ class HttpApiClient implements ApiClient {
     }
 
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: 'Request failed' }))
-      throw new Error(error.error?.message || error.error || `HTTP ${res.status}`)
+      const error = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } }))
+      const message = error.error?.message || error.error || `HTTP ${res.status}`
+      const code = error.error?.code || `HTTP_${res.status}`
+      const err = new Error(message)
+      ;(err as any).code = code
+      ;(err as any).status = res.status
+      throw err
     }
     return res.json()
   }
@@ -373,18 +378,18 @@ class MockApiClient implements ApiClient {
   async createProject(input: CreateProjectInput) {
     const { createMockProject } = await this.data
     const id = `project-${Date.now()}`
-    const project = createMockProject(id)
-    return { ...project, name: input.name, description: input.description, currentStage: 1 }
+    const project = createMockProject(id, 1)
+    return { ...project, name: input.name, description: input.description }
   }
 
   async getProject(id: string) {
     const { createMockProject } = await this.data
-    return createMockProject(id)
+    return createMockProject(id, 1)
   }
 
   async updateProject(id: string, _input: UpdateProjectInput) {
     const { createMockProject } = await this.data
-    return createMockProject(id)
+    return createMockProject(id, 1)
   }
 
   async deleteProject(_id: string) {}

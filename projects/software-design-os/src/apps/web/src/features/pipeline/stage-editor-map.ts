@@ -14,6 +14,7 @@ import { ExportPreviewEditor } from '@/features/stages/export-preview'
 
 export interface StageEditorProps {
   stage: Stage
+  allStages?: Stage[]
 }
 
 const editorMap: Record<StageName, ComponentType<StageEditorProps>> = {

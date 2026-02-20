@@ -16,4 +16,5 @@ export type {
   GenerateResponse,
   CompleteResponse,
   RevertResponse,
+  ActivateOutputResponse,
 } from './api-responses'

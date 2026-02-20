@@ -51,6 +51,9 @@ const port = parseInt(process.env.PORT ?? '3001', 10)
 console.log(`API server running on http://localhost:${port}`)
 
 const server = serve({ fetch: app.fetch, port })
+// Disable the default Node.js request timeout so long-running AI generations aren't killed
+;(server as import('node:http').Server).timeout = 0
+;(server as import('node:http').Server).requestTimeout = 0
 
 // Graceful shutdown
 const shutdown = async () => {

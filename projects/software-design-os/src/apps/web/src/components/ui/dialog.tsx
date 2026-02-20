@@ -9,14 +9,28 @@ interface DialogProps {
 }
 
 export function Dialog({ open, onOpenChange, children }: DialogProps) {
+  React.useEffect(() => {
+    if (!open) return
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onOpenChange(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, onOpenChange])
+
   if (!open) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
-      <div className="relative z-50 w-full max-w-md rounded-lg border border-zinc-200 bg-white p-6 shadow-lg">
+      <div className="fixed inset-0 bg-black/50" aria-hidden="true" onClick={() => onOpenChange(false)} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative z-50 w-full max-w-md rounded-lg border border-zinc-200 bg-white p-6 shadow-lg"
+      >
         <button
           onClick={() => onOpenChange(false)}
+          aria-label="Close dialog"
           className="absolute right-4 top-4 rounded-sm text-zinc-400 hover:text-zinc-900"
         >
           <X className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, type ReactNode } from 'react'
+import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { ClipboardList, RotateCcw } from 'lucide-react'
 import type { Stage } from '@sdos/shared'
 import { usePipelineStore } from '@/stores/pipeline-store'
@@ -7,6 +7,10 @@ import type { InterviewMode, InterviewAnswers } from './types'
 import { getStageInterview, hasInterview } from './interview-config'
 import { InterviewModeSelector } from './interview-mode-selector'
 import { GuidedWizard } from './guided-wizard'
+
+function interviewStorageKey(stageId: string) {
+  return `sdos-interview-${stageId}`
+}
 
 interface StageInterviewWrapperProps {
   stage: Stage
@@ -25,6 +29,7 @@ export function StageInterviewWrapper({
   const [mode, setMode] = useState<InterviewMode | null>(null)
   const [answers, setAnswers] = useState<InterviewAnswers>({})
   const [showInterview, setShowInterview] = useState(false)
+  const restoredStageRef = useRef<string | null>(null)
 
   // All hooks must be declared before any conditional return
   const handleGenerate = useCallback(() => {
@@ -32,8 +37,53 @@ export function StageInterviewWrapper({
     onGenerate()
   }, [answers, setUserInput, onGenerate])
 
+  // Auto-save interview answers to localStorage with debounce (not the API,
+  // to avoid overwriting stage.data or prematurely changing stage status)
+  useEffect(() => {
+    const hasAnswers = Object.keys(answers).length > 0
+    if (!hasAnswers) return
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          interviewStorageKey(stage.id),
+          JSON.stringify({ answers, mode }),
+        )
+      } catch {
+        // Storage full or unavailable — safe to ignore
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [answers, mode, stage.id])
+
+  // Restore answers from localStorage on mount / stage change
+  useEffect(() => {
+    if (restoredStageRef.current === stage.id) return
+    restoredStageRef.current = stage.id
+    try {
+      const raw = localStorage.getItem(interviewStorageKey(stage.id))
+      if (!raw) return
+      const saved = JSON.parse(raw) as { answers?: InterviewAnswers; mode?: InterviewMode }
+      if (saved.answers) setAnswers(saved.answers)
+      if (saved.mode) setMode(saved.mode)
+    } catch {
+      // Corrupt data — ignore
+    }
+  }, [stage.id])
+
+  // Clean up localStorage once stage is in a post-generation state
+  useEffect(() => {
+    if (stage.status === 'review' || stage.status === 'complete') {
+      localStorage.removeItem(interviewStorageKey(stage.id))
+    }
+  }, [stage.status, stage.id])
+
   const config = getStageInterview(stage.stageNumber)
-  const stageHasData = !!stage.data && Object.keys(stage.data).length > 0
+  // Ignore interview-only data ({ _interviewAnswers, _interviewMode }) that may
+  // still be in the DB from previous auto-saves — only real generated/edited data counts.
+  const stageHasData =
+    !!stage.data &&
+    Object.keys(stage.data).length > 0 &&
+    !('_interviewAnswers' in stage.data)
   const stageIsActive = stage.status === 'active'
 
   const isInterviewing = !!config && hasInterview(stage.stageNumber) && (!stageHasData || showInterview)
@@ -53,9 +103,10 @@ export function StageInterviewWrapper({
 
   // Stage has data and user isn't re-interviewing — show editor
   if (stageHasData && !showInterview) {
+    const canReInterview = stage.status === 'active' || stage.status === 'review'
     return (
       <div className="space-y-4">
-        {stageIsActive && (
+        {canReInterview && (
           <div className="flex justify-end">
             <Button
               variant="ghost"

@@ -8,6 +8,7 @@ import {
   stageOutputs as stageOutputsTable,
 } from '../db/schema'
 import type { AppEnv } from '../types'
+import { generateStage, GenerationError } from '../lib/generation-service'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -172,6 +173,182 @@ stageRoutes.put('/:num', async (c) => {
   }
 
   return c.json(updated)
+})
+
+// POST /api/projects/:projectId/stages/:num/generate — trigger AI generation
+const generateInputSchema = z.object({
+  userInput: z.string().max(10_000).optional(),
+})
+
+stageRoutes.post('/:num/generate', async (c) => {
+  const userId = c.get('userId')
+  const projectId = c.req.param('projectId')
+  const stageNumber = parseStageNumber(c.req.param('num'))
+
+  if (!validateProjectId(projectId)) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid project ID' } }, 400)
+  }
+
+  if (!stageNumber) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid stage number' } }, 400)
+  }
+
+  if (stageNumber === 9) {
+    return c.json(
+      { error: { code: 'BAD_REQUEST', message: 'Export stage does not use AI generation' } },
+      400,
+    )
+  }
+
+  if (!(await verifyProjectOwnership(projectId, userId))) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Project not found' } }, 404)
+  }
+
+  const body = generateInputSchema.parse(await c.req.json().catch(() => ({})))
+
+  try {
+    const result = await generateStage({
+      projectId,
+      stageNumber,
+      userId,
+      userInput: body.userInput,
+    })
+
+    return c.json(result)
+  } catch (err) {
+    if (err instanceof GenerationError) {
+      console.error(`[generate] Error (${err.code}): ${err.message}`)
+      const statusMap: Record<string, number> = {
+        NOT_FOUND: 404,
+        BAD_STATUS: 400,
+        INVALID_STAGE: 400,
+        NO_PROVIDER: 400,
+        GENERATION_FAILED: 422,
+        PARSE_ERROR: 422,
+        TRUNCATED: 422,
+      }
+      const status = statusMap[err.code] ?? 500
+      return c.json(
+        { error: { code: err.code, message: err.message } },
+        status as 400 | 404 | 422 | 500,
+      )
+    }
+    throw err
+  }
+})
+
+// POST /api/projects/:projectId/stages/:num/outputs/:version/activate — restore a previous output version
+stageRoutes.post('/:num/outputs/:version/activate', async (c) => {
+  const userId = c.get('userId')
+  const projectId = c.req.param('projectId')
+  const stageNumber = parseStageNumber(c.req.param('num'))
+  const version = parseInt(c.req.param('version'), 10)
+
+  if (!validateProjectId(projectId)) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid project ID' } }, 400)
+  }
+
+  if (!stageNumber) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid stage number' } }, 400)
+  }
+
+  if (isNaN(version) || version < 1 || String(version) !== c.req.param('version')) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid version number' } }, 400)
+  }
+
+  if (!(await verifyProjectOwnership(projectId, userId))) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Project not found' } }, 404)
+  }
+
+  const result = await db.transaction(async (tx) => {
+    const [stage] = await tx
+      .select()
+      .from(stagesTable)
+      .where(
+        and(
+          eq(stagesTable.projectId, projectId),
+          eq(stagesTable.stageNumber, stageNumber),
+        ),
+      )
+      .limit(1)
+
+    if (!stage) {
+      return { error: 'NOT_FOUND' as const }
+    }
+
+    if (!EDITABLE_STATUSES.has(stage.status) && stage.status !== 'complete') {
+      return { error: 'BAD_STATUS' as const, status: stage.status }
+    }
+
+    // Find the target output
+    const [targetOutput] = await tx
+      .select()
+      .from(stageOutputsTable)
+      .where(
+        and(
+          eq(stageOutputsTable.stageId, stage.id),
+          eq(stageOutputsTable.version, version),
+        ),
+      )
+      .limit(1)
+
+    if (!targetOutput) {
+      return { error: 'OUTPUT_NOT_FOUND' as const }
+    }
+
+    // Deactivate all outputs for this stage
+    await tx
+      .update(stageOutputsTable)
+      .set({ isActive: false })
+      .where(eq(stageOutputsTable.stageId, stage.id))
+
+    // Activate the target output
+    const [activatedOutput] = await tx
+      .update(stageOutputsTable)
+      .set({ isActive: true })
+      .where(eq(stageOutputsTable.id, targetOutput.id))
+      .returning()
+
+    // Parse output content and write to stage.data
+    let parsedData: Record<string, unknown> = {}
+    try {
+      parsedData = JSON.parse(targetOutput.content)
+    } catch {
+      parsedData = { raw: targetOutput.content }
+    }
+
+    // If stage is complete, revert to review (data changed, downstream stale)
+    const newStatus = stage.status === 'complete' ? 'review' : stage.status
+
+    const [updatedStage] = await tx
+      .update(stagesTable)
+      .set({
+        data: parsedData,
+        status: newStatus,
+        ...(newStatus === 'review' ? { completedAt: null, validatedAt: null } : {}),
+      })
+      .where(eq(stagesTable.id, stage.id))
+      .returning()
+
+    return { error: null, stage: updatedStage, output: activatedOutput }
+  })
+
+  if (result.error === 'NOT_FOUND') {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Stage not found' } }, 404)
+  }
+
+  if (result.error === 'BAD_STATUS') {
+    return c.json(
+      { error: { code: 'BAD_REQUEST', message: `Cannot activate version in '${result.status}' status` } },
+      400,
+    )
+  }
+
+  if (result.error === 'OUTPUT_NOT_FOUND') {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Output version not found' } }, 404)
+  }
+
+  return c.json({ stage: result.stage, output: result.output })
 })
 
 // POST /api/projects/:projectId/stages/:num/complete — validate + mark complete + unlock next
