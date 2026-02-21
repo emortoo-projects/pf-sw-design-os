@@ -67,7 +67,22 @@ export function PipelineView({ project }: PipelineViewProps) {
 
   function handleComplete() {
     if (!activeStage) return
-    mutations.complete.mutate({ stageNumber: activeStage.stageNumber })
+    mutations.complete.mutate(
+      { stageNumber: activeStage.stageNumber },
+      {
+        onSuccess: () => {
+          const nextIncomplete = project.stages
+            .filter((s) => s.stageNumber > activeStage.stageNumber && s.status !== 'complete')
+            .sort((a, b) => a.stageNumber - b.stageNumber)[0]
+
+          if (nextIncomplete) {
+            setActiveStageNumber(nextIncomplete.stageNumber)
+          } else {
+            setActiveStageNumber(9)
+          }
+        },
+      }
+    )
   }
 
   function handleRevert() {
