@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -45,22 +44,18 @@ export default function AIConfigurationPage() {
   const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState("");
 
-  // Get user's orgs
   const orgsQuery = trpc.organizations.list.useQuery({});
   const currentOrgId = orgsQuery.data?.data?.[0]?.id || "";
 
-  // Fetch providers
   const providersQuery = trpc.aiProviders.list.useQuery();
   const providers = providersQuery.data?.data ?? [];
 
-  // Fetch configurations
   const configsQuery = trpc.aiConfigurations.list.useQuery(
     { organizationId: currentOrgId },
     { enabled: !!currentOrgId }
   );
   const configsData = configsQuery.data?.data;
 
-  // Map provider IDs to configs
   const configByProvider = useMemo(() => {
     const configs = configsData ?? [];
     const map = new Map<
@@ -161,137 +156,123 @@ export default function AIConfigurationPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="px-6 py-4">
-          <h1 className="text-2xl font-heading font-bold">AI Configuration</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage AI provider API keys, models, and usage limits
-          </p>
-        </div>
-      </header>
+    <div className="animate-fade-up" style={{ animationFillMode: "both" }}>
+      {orgsQuery.isLoading ? (
+        <p className="text-[13px] text-white/40">Loading...</p>
+      ) : (
+        <div className="space-y-6">
+          {/* Provider grid */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {providers.map((provider, i) => {
+              const config = configByProvider.get(provider.id);
+              const configured = !!config;
+              const enabled = config?.isEnabled ?? false;
 
-      <main className="p-6 space-y-6">
-        {!currentOrgId ? (
-          <p className="text-muted-foreground">
-            No organization found. Create one to configure AI providers.
-          </p>
-        ) : (
-          <>
-            {/* Provider list */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {providers.map((provider) => {
-                const config = configByProvider.get(provider.id);
-                const configured = !!config;
-                const enabled = config?.isEnabled ?? false;
-
-                return (
-                  <Card
-                    key={provider.id}
-                    className="cursor-pointer transition-shadow hover:shadow-md"
-                    onClick={() => openDialog(provider.id)}
-                  >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-sm font-bold">
-                          {provider.name.charAt(0)}
-                        </div>
-                        <div>
-                          <CardTitle className="text-sm">
-                            {provider.name}
-                          </CardTitle>
-                          <CardDescription className="text-xs">
-                            {provider.slug}
-                          </CardDescription>
-                        </div>
+              return (
+                <Card
+                  key={provider.id}
+                  className="cursor-pointer transition-colors duration-150 hover:bg-white/[0.03]"
+                  onClick={() => openDialog(provider.id)}
+                  style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-md bg-white/[0.06] flex items-center justify-center text-[13px] font-semibold text-white/50">
+                        {provider.name.charAt(0)}
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-2">
-                        {configured ? (
-                          <>
-                            <Badge
-                              variant={enabled ? "default" : "secondary"}
-                            >
-                              {enabled ? "Enabled" : "Disabled"}
-                            </Badge>
-                            {config?.defaultModel && (
-                              <Badge variant="outline" className="text-xs">
-                                {config.defaultModel}
-                              </Badge>
-                            )}
-                          </>
-                        ) : (
-                          <Badge variant="outline">Not configured</Badge>
-                        )}
-                      </div>
-                      {configured && (
-                        <div className="mt-3 flex items-center gap-2">
-                          <Switch
-                            checked={enabled}
-                            onCheckedChange={(checked) => {
-                              if (config) {
-                                handleToggle(config.id, checked);
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <span className="text-xs text-muted-foreground">
-                            {enabled ? "Active" : "Inactive"}
-                          </span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {providers.length === 0 && !providersQuery.isLoading && (
-              <p className="text-muted-foreground">
-                No AI providers available
-              </p>
-            )}
-
-            {/* Usage summary */}
-            <Separator />
-            <div>
-              <h2 className="text-lg font-medium mb-4">
-                Configured Providers
-              </h2>
-              {configurations.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No providers configured yet. Click a provider above to add
-                  your API key.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {configurations.map((config) => (
-                    <div
-                      key={config.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
                       <div>
-                        <p className="text-sm font-medium">
-                          {config.providerName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Model: {config.defaultModel ?? "Default"}
-                        </p>
+                        <CardTitle className="text-[13px]">
+                          {provider.name}
+                        </CardTitle>
+                        <CardDescription className="text-[11px]">
+                          {provider.slug}
+                        </CardDescription>
                       </div>
-                      <Badge
-                        variant={config.isEnabled ? "default" : "secondary"}
-                      >
-                        {config.isEnabled ? "Active" : "Disabled"}
-                      </Badge>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </main>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2">
+                      {configured ? (
+                        <>
+                          <Badge className={enabled ? "text-white/60" : "text-white/30"}>
+                            {enabled ? "Enabled" : "Disabled"}
+                          </Badge>
+                          {config?.defaultModel && (
+                            <Badge className="text-white/30">
+                              {config.defaultModel}
+                            </Badge>
+                          )}
+                        </>
+                      ) : (
+                        <Badge className="text-white/30">Not configured</Badge>
+                      )}
+                    </div>
+                    {configured && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <Switch
+                          checked={enabled}
+                          onCheckedChange={(checked) => {
+                            if (config) {
+                              handleToggle(config.id, checked);
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-[11px] text-white/30">
+                          {enabled ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {providers.length === 0 && !providersQuery.isLoading && (
+            <p className="text-[13px] text-white/40">
+              No AI providers available
+            </p>
+          )}
+
+          {/* Configured providers list */}
+          <div className="h-px bg-[#1A1A1A]" />
+          <div>
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-3">
+              Configured Providers
+            </h2>
+            {configurations.length === 0 ? (
+              <p className="text-[13px] text-white/30">
+                No providers configured yet. Click a provider above to add
+                your API key.
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {configurations.map((config) => (
+                  <div
+                    key={config.id}
+                    className="flex items-center justify-between p-3 rounded-lg border border-[#1A1A1A] bg-[#111111] hover:bg-white/[0.02] transition-colors duration-150"
+                  >
+                    <div>
+                      <p className="text-[13px] font-medium text-white/70">
+                        {config.providerName}
+                      </p>
+                      <p className="text-[11px] text-white/30">
+                        Model: {config.defaultModel ?? "Default"}
+                      </p>
+                    </div>
+                    <Badge
+                      className={config.isEnabled ? "text-white/60" : "text-white/30"}
+                    >
+                      {config.isEnabled ? "Active" : "Disabled"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Configuration dialog */}
       <Dialog
@@ -354,7 +335,7 @@ export default function AIConfigurationPage() {
               </div>
             )}
 
-            {error && <p className="text-sm text-error-500">{error}</p>}
+            {error && <p className="text-[13px] text-white/40">{error}</p>}
 
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={closeDialog}>

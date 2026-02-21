@@ -26,18 +26,44 @@ const providerColors: Record<string, string> = {
   openai: "bg-green-500",
   anthropic: "bg-purple-500",
   google: "bg-blue-500",
+  deepseek: "bg-cyan-500",
   other: "bg-gray-500",
 };
+
+const mockCostsByProvider: Record<string, number> = {
+  anthropic: 218.40,
+  openai: 185.60,
+  google: 52.30,
+  deepseek: 31.22,
+};
+
+const mockCostEntries: CostEntry[] = [
+  { id: "ce1", date: "2026-02-21", provider: "anthropic", model: "claude-sonnet-4-5", tokens: 245000, cost: 2.45, agentName: "Research Bot" },
+  { id: "ce2", date: "2026-02-21", provider: "openai", model: "gpt-4-turbo", tokens: 180000, cost: 1.80, agentName: "Code Review" },
+  { id: "ce3", date: "2026-02-21", provider: "anthropic", model: "claude-haiku-4-5", tokens: 520000, cost: 0.52, agentName: "Customer Support" },
+  { id: "ce4", date: "2026-02-20", provider: "openai", model: "gpt-4o", tokens: 310000, cost: 3.10, agentName: "Data Extractor" },
+  { id: "ce5", date: "2026-02-20", provider: "google", model: "gemini-2.0-flash", tokens: 420000, cost: 0.84, agentName: "Email Summarizer" },
+  { id: "ce6", date: "2026-02-20", provider: "anthropic", model: "claude-sonnet-4-5", tokens: 190000, cost: 1.90, agentName: "Report Writer" },
+  { id: "ce7", date: "2026-02-19", provider: "deepseek", model: "deepseek-v3", tokens: 680000, cost: 0.68, agentName: "Translation Agent" },
+  { id: "ce8", date: "2026-02-19", provider: "openai", model: "gpt-4-turbo", tokens: 155000, cost: 1.55, agentName: "Research Bot" },
+  { id: "ce9", date: "2026-02-19", provider: "anthropic", model: "claude-opus-4", tokens: 85000, cost: 4.25, agentName: "Code Review" },
+  { id: "ce10", date: "2026-02-18", provider: "google", model: "gemini-2.0-pro", tokens: 290000, cost: 2.90, agentName: "Data Extractor" },
+];
+
+const mockBudgets: BudgetSummary[] = [
+  { id: "bgt1", name: "Monthly Total", limit: "1000.00", currentSpend: "487.52", period: "monthly" },
+  { id: "bgt2", name: "Anthropic Budget", limit: "300.00", currentSpend: "218.40", period: "monthly" },
+  { id: "bgt3", name: "OpenAI Budget", limit: "250.00", currentSpend: "185.60", period: "monthly" },
+  { id: "bgt4", name: "Research Bot Cap", limit: "200.00", currentSpend: "168.45", period: "monthly" },
+];
 
 export default function CostAnalyticsPage() {
   const [period, setPeriod] = useState<Period>("week");
 
-  // Placeholder data - will be connected to tRPC
-  const totalCost = 0;
-  const costsByProvider: Record<string, number> = {};
-  const costEntries: CostEntry[] = [];
-  const budgets: BudgetSummary[] = [];
-  const loading = false;
+  const totalCost = Object.values(mockCostsByProvider).reduce((s, v) => s + v, 0);
+  const costsByProvider = mockCostsByProvider;
+  const costEntries = mockCostEntries;
+  const budgets = mockBudgets;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -86,30 +112,24 @@ export default function CostAnalyticsPage() {
         {/* Provider Breakdown */}
         <div className="mt-8 rounded-lg border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900">Cost by Provider</h2>
-          <div className="mt-4">
-            {Object.keys(costsByProvider).length === 0 ? (
-              <p className="text-sm text-gray-500">No cost data available</p>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(costsByProvider).map(([provider, cost]) => {
-                  const percent = totalCost > 0 ? (cost / totalCost) * 100 : 0;
-                  return (
-                    <div key={provider}>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium capitalize text-gray-700">{provider}</span>
-                        <span className="text-gray-500">${cost.toFixed(2)} ({percent.toFixed(1)}%)</span>
-                      </div>
-                      <div className="mt-1 h-2 w-full rounded-full bg-gray-200">
-                        <div
-                          className={`h-2 rounded-full ${providerColors[provider] || providerColors.other}`}
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          <div className="mt-4 space-y-3">
+            {Object.entries(costsByProvider).map(([provider, cost]) => {
+              const percent = totalCost > 0 ? (cost / totalCost) * 100 : 0;
+              return (
+                <div key={provider}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium capitalize text-gray-700">{provider}</span>
+                    <span className="text-gray-500">${cost.toFixed(2)} ({percent.toFixed(1)}%)</span>
+                  </div>
+                  <div className="mt-1 h-2 w-full rounded-full bg-gray-200">
+                    <div
+                      className={`h-2 rounded-full ${providerColors[provider] || providerColors.other}`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -117,35 +137,31 @@ export default function CostAnalyticsPage() {
         <div className="mt-8 rounded-lg border bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900">Budget Tracking</h2>
           <div className="mt-4 space-y-4">
-            {budgets.length === 0 ? (
-              <p className="text-sm text-gray-500">No budgets configured</p>
-            ) : (
-              budgets.map((budget) => {
-                const limit = parseFloat(budget.limit);
-                const spent = parseFloat(budget.currentSpend);
-                const percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
-                return (
-                  <div key={budget.id} className="rounded-md border p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-900">{budget.name}</span>
-                      <span className="text-sm text-gray-500 capitalize">{budget.period}</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between text-sm">
-                      <span className="text-gray-500">${spent.toFixed(2)} / ${limit.toFixed(2)}</span>
-                      <span className={`font-medium ${percent > 80 ? "text-red-600" : "text-gray-600"}`}>
-                        {percent.toFixed(0)}%
-                      </span>
-                    </div>
-                    <div className="mt-1 h-2 w-full rounded-full bg-gray-200">
-                      <div
-                        className={`h-2 rounded-full transition-all ${percent > 80 ? "bg-red-500" : "bg-blue-500"}`}
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
+            {budgets.map((budget) => {
+              const limit = parseFloat(budget.limit);
+              const spent = parseFloat(budget.currentSpend);
+              const percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+              return (
+                <div key={budget.id} className="rounded-md border p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">{budget.name}</span>
+                    <span className="text-sm text-gray-500 capitalize">{budget.period}</span>
                   </div>
-                );
-              })
-            )}
+                  <div className="mt-2 flex items-center justify-between text-sm">
+                    <span className="text-gray-500">${spent.toFixed(2)} / ${limit.toFixed(2)}</span>
+                    <span className={`font-medium ${percent > 80 ? "text-red-600" : "text-gray-600"}`}>
+                      {percent.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 w-full rounded-full bg-gray-200">
+                    <div
+                      className={`h-2 rounded-full transition-all ${percent > 80 ? "bg-red-500" : "bg-blue-500"}`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -154,50 +170,38 @@ export default function CostAnalyticsPage() {
           <div className="border-b px-6 py-4">
             <h2 className="text-lg font-semibold text-gray-900">Cost History</h2>
           </div>
-          {loading ? (
-            <div className="p-6">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="mb-3 h-10 animate-pulse rounded bg-gray-100" />
-              ))}
-            </div>
-          ) : costEntries.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm text-gray-500">No cost entries found</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-gray-50 text-left text-xs font-medium uppercase text-gray-500">
-                    <th className="px-6 py-3">Date</th>
-                    <th className="px-6 py-3">Agent</th>
-                    <th className="px-6 py-3">Provider</th>
-                    <th className="px-6 py-3">Model</th>
-                    <th className="px-6 py-3 text-right">Tokens</th>
-                    <th className="px-6 py-3 text-right">Cost</th>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-gray-50 text-left text-xs font-medium uppercase text-gray-500">
+                  <th className="px-6 py-3">Date</th>
+                  <th className="px-6 py-3">Agent</th>
+                  <th className="px-6 py-3">Provider</th>
+                  <th className="px-6 py-3">Model</th>
+                  <th className="px-6 py-3 text-right">Tokens</th>
+                  <th className="px-6 py-3 text-right">Cost</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {costEntries.map((entry) => (
+                  <tr key={entry.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-3 text-sm text-gray-500">
+                      {new Date(entry.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-3 text-sm font-medium text-gray-900">{entry.agentName}</td>
+                    <td className="px-6 py-3 text-sm capitalize text-gray-500">{entry.provider}</td>
+                    <td className="px-6 py-3 text-sm text-gray-500">{entry.model}</td>
+                    <td className="px-6 py-3 text-right text-sm text-gray-500">
+                      {entry.tokens.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-3 text-right text-sm font-medium text-gray-900">
+                      ${entry.cost.toFixed(4)}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {costEntries.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-3 text-sm text-gray-500">
-                        {new Date(entry.date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-3 text-sm font-medium text-gray-900">{entry.agentName}</td>
-                      <td className="px-6 py-3 text-sm capitalize text-gray-500">{entry.provider}</td>
-                      <td className="px-6 py-3 text-sm text-gray-500">{entry.model}</td>
-                      <td className="px-6 py-3 text-right text-sm text-gray-500">
-                        {entry.tokens.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-3 text-right text-sm font-medium text-gray-900">
-                        ${entry.cost.toFixed(4)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

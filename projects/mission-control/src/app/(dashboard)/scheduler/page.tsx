@@ -58,6 +58,23 @@ const execStatusColors: Record<string, string> = {
   cancelled: "bg-gray-100 text-gray-800",
 };
 
+const mockJobs: Job[] = [
+  { id: "sj1", name: "Daily Market Report", description: "Generate daily market analysis at 8 AM", agentId: "ag1", type: "scheduled", cronExpression: "0 8 * * *", status: "running", priority: 2, lastRunAt: "2026-02-21T08:00:00Z", nextRunAt: "2026-02-22T08:00:00Z", createdAt: "2026-01-15T10:00:00Z" },
+  { id: "sj2", name: "Code Review Pipeline", description: "Triggered on PR creation", agentId: "ag2", type: "triggered", cronExpression: null, status: "completed", priority: 1, lastRunAt: "2026-02-21T14:28:00Z", nextRunAt: null, createdAt: "2026-01-20T09:00:00Z" },
+  { id: "sj3", name: "CRM Data Sync", description: "Sync Salesforce records every 3 hours", agentId: "ag3", type: "scheduled", cronExpression: "0 */3 * * *", status: "queued", priority: 0, lastRunAt: "2026-02-21T12:00:00Z", nextRunAt: "2026-02-21T15:00:00Z", createdAt: "2026-02-01T08:00:00Z" },
+  { id: "sj4", name: "Email Digest", description: "Send daily email digest at 6 PM", agentId: "ag4", type: "scheduled", cronExpression: "0 18 * * *", status: "pending", priority: 0, lastRunAt: "2026-02-20T18:00:00Z", nextRunAt: "2026-02-21T18:00:00Z", createdAt: "2026-02-01T08:00:00Z" },
+  { id: "sj5", name: "Nightly Backup Verification", description: "Verify DB backup integrity at 2 AM", agentId: "ag9", type: "scheduled", cronExpression: "0 2 * * *", status: "completed", priority: 0, lastRunAt: "2026-02-21T02:00:00Z", nextRunAt: "2026-02-22T02:00:00Z", createdAt: "2026-01-10T08:00:00Z" },
+  { id: "sj6", name: "Weekly Summary Report", description: "Generate weekly ops summary on Mondays", agentId: "ag5", type: "scheduled", cronExpression: "0 9 * * 1", status: "completed", priority: 1, lastRunAt: "2026-02-17T09:00:00Z", nextRunAt: "2026-02-24T09:00:00Z", createdAt: "2026-01-06T10:00:00Z" },
+  { id: "sj7", name: "Competitor Price Check", description: "Monitor competitor pricing every 12 hours", agentId: "ag1", type: "scheduled", cronExpression: "0 */12 * * *", status: "paused", priority: 0, lastRunAt: "2026-02-20T00:00:00Z", nextRunAt: null, createdAt: "2026-02-05T10:00:00Z" },
+];
+
+const mockExecutions: JobExecution[] = [
+  { id: "ex1", jobId: "sj1", status: "success", errorMessage: null, duration: 45200, startedAt: "2026-02-21T08:00:00Z", completedAt: "2026-02-21T08:00:45Z", createdAt: "2026-02-21T08:00:00Z" },
+  { id: "ex2", jobId: "sj1", status: "success", errorMessage: null, duration: 42100, startedAt: "2026-02-20T08:00:00Z", completedAt: "2026-02-20T08:00:42Z", createdAt: "2026-02-20T08:00:00Z" },
+  { id: "ex3", jobId: "sj1", status: "failed", errorMessage: "API rate limit exceeded", duration: 12300, startedAt: "2026-02-19T08:00:00Z", completedAt: "2026-02-19T08:00:12Z", createdAt: "2026-02-19T08:00:00Z" },
+  { id: "ex4", jobId: "sj2", status: "success", errorMessage: null, duration: 34500, startedAt: "2026-02-21T14:28:00Z", completedAt: "2026-02-21T14:28:34Z", createdAt: "2026-02-21T14:28:00Z" },
+];
+
 export default function JobSchedulerPage() {
   const [view, setView] = useState<ViewMode>("list");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -72,13 +89,10 @@ export default function JobSchedulerPage() {
     priority: 0,
   });
 
-  // Placeholder data - will be connected to tRPC
-  const jobs: Job[] = [];
-  const executions: JobExecution[] = [];
-  const loading = false;
+  const jobs = mockJobs;
+  const executions = mockExecutions.filter((e) => selectedJob && e.jobId === selectedJob.id);
 
   const handleSubmit = () => {
-    // Will connect to tRPC mutation
     setShowCreateModal(false);
     setFormData({ name: "", description: "", agentId: "", type: "scheduled", cronExpression: "", priority: 0 });
   };
@@ -145,85 +159,67 @@ export default function JobSchedulerPage() {
         {/* List View */}
         {view === "list" && (
           <div className="mt-8">
-            {loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-16 animate-pulse rounded-lg border bg-gray-100" />
-                ))}
-              </div>
-            ) : jobs.length === 0 ? (
-              <div className="rounded-lg border bg-white px-6 py-12 text-center">
-                <p className="text-sm text-gray-500">No jobs scheduled</p>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700"
-                >
-                  Create your first job
-                </button>
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b bg-gray-50 text-left text-xs font-medium uppercase text-gray-500">
-                      <th className="px-6 py-3">Name</th>
-                      <th className="px-6 py-3">Type</th>
-                      <th className="px-6 py-3">Cron</th>
-                      <th className="px-6 py-3">Status</th>
-                      <th className="px-6 py-3">Next Run</th>
-                      <th className="px-6 py-3">Last Run</th>
-                      <th className="px-6 py-3 text-right">Actions</th>
+            <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-gray-50 text-left text-xs font-medium uppercase text-gray-500">
+                    <th className="px-6 py-3">Name</th>
+                    <th className="px-6 py-3">Type</th>
+                    <th className="px-6 py-3">Cron</th>
+                    <th className="px-6 py-3">Status</th>
+                    <th className="px-6 py-3">Next Run</th>
+                    <th className="px-6 py-3">Last Run</th>
+                    <th className="px-6 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {jobs.map((job) => (
+                    <tr key={job.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <p className="font-medium text-gray-900">{job.name}</p>
+                        {job.description && (
+                          <p className="text-xs text-gray-500">{job.description}</p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm capitalize text-gray-500">{job.type}</td>
+                      <td className="px-6 py-4">
+                        {job.cronExpression ? (
+                          <code className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                            {job.cronExpression}
+                          </code>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[job.status]}`}
+                        >
+                          {job.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {job.nextRunAt ? new Date(job.nextRunAt).toLocaleString() : "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {job.lastRunAt ? new Date(job.lastRunAt).toLocaleString() : "-"}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => {
+                            setSelectedJob(job);
+                            setShowHistoryModal(true);
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-700"
+                        >
+                          History
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {jobs.map((job) => (
-                      <tr key={job.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <p className="font-medium text-gray-900">{job.name}</p>
-                          {job.description && (
-                            <p className="text-xs text-gray-500">{job.description}</p>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-sm capitalize text-gray-500">{job.type}</td>
-                        <td className="px-6 py-4">
-                          {job.cronExpression ? (
-                            <code className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                              {job.cronExpression}
-                            </code>
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[job.status]}`}
-                          >
-                            {job.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {job.nextRunAt ? new Date(job.nextRunAt).toLocaleString() : "-"}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {job.lastRunAt ? new Date(job.lastRunAt).toLocaleString() : "-"}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => {
-                              setSelectedJob(job);
-                              setShowHistoryModal(true);
-                            }}
-                            className="text-sm text-blue-600 hover:text-blue-700"
-                          >
-                            History
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -426,7 +422,7 @@ export default function JobSchedulerPage() {
                               {exec.startedAt ? new Date(exec.startedAt).toLocaleString() : "-"}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-500">
-                              {exec.duration ? `${exec.duration}ms` : "-"}
+                              {exec.duration ? `${(exec.duration / 1000).toFixed(1)}s` : "-"}
                             </td>
                             <td className="px-4 py-2 text-sm text-red-500 truncate max-w-[200px]">
                               {exec.errorMessage || "-"}

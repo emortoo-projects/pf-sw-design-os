@@ -1,7 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 interface AIUsage {
   totalTokens: number;
   totalCost: number;
@@ -16,36 +14,30 @@ function formatNumber(n: number): string {
 
 export function AIUsageWidget({ usage }: { usage: AIUsage }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">AI Usage</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">
-              Total Requests
-            </span>
-            <span className="text-sm font-medium">
-              {formatNumber(usage.totalRequests)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Tokens Used</span>
-            <span className="text-sm font-medium">
-              {formatNumber(usage.totalTokens)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">
-              Estimated Cost
-            </span>
-            <span className="text-sm font-medium">
-              ${usage.totalCost.toFixed(2)}
-            </span>
-          </div>
+    <div className="rounded-lg border border-[#1A1A1A] bg-[#111111] p-4">
+      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-3">
+        AI Usage
+      </h3>
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-[11px] text-white/40">Total Requests</span>
+          <span className="text-[13px] font-mono text-white/70">
+            {formatNumber(usage.totalRequests)}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex justify-between items-center">
+          <span className="text-[11px] text-white/40">Tokens Used</span>
+          <span className="text-[13px] font-mono text-white/70">
+            {formatNumber(usage.totalTokens)}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-[11px] text-white/40">Estimated Cost</span>
+          <span className="text-[13px] font-mono text-white/70">
+            ${usage.totalCost.toFixed(2)}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }

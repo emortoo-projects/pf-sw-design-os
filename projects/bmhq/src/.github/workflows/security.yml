@@ -1,0 +1,398 @@
+# .github/workflows/security.yml
+# BMHQ Platform — Security & Coverage Pipeline
+# Runs on every push and PR across the monorepo
+
+name: Security & Coverage
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run full DAST scan weekly on Sundays at 2am UTC
+    - cron: '0 2 * * 0'
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 1. Test + Code Coverage (per workspace)
+  # ─────────────────────────────────────────────
+  test-coverage:
+    name: Tests & Coverage
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace:
+          - bmhq-platform
+          - mission-control
+          - agent-os
+          # Add new modules here as they're built:
+          # - business-os
+          # - marketing-os
+          # - finance-os
+          # - learning-os
+          # - life-os
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests with coverage
+        run: pnpm --filter ${{ matrix.workspace }} run test:coverage
+        env:
+          CI: true
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: ${{ matrix.workspace }}
+          directory: ./projects/${{ matrix.workspace }}/coverage
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.workspace }}
+          path: ./projects/${{ matrix.workspace }}/coverage
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # 2. SAST — CodeQL (GitHub native)
+  # ─────────────────────────────────────────────
+  codeql:
+    name: SAST — CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # Custom query packs for stricter checks
+          queries: security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Run CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  # ─────────────────────────────────────────────
+  # 3. SAST — Semgrep (faster, custom rules)
+  # ─────────────────────────────────────────────
+  semgrep:
+    name: SAST — Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep ci --config auto --config p/typescript --config p/react --config p/nodejs --config p/sql-injection --config p/xss --config p/secrets --json --output semgrep-results.json
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-results.json
+          retention-days: 30
+
+  # ─────────────────────────────────────────────
+  # 4. Secrets Detection — Gitleaks
+  # ─────────────────────────────────────────────
+  secrets-scan:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # ─────────────────────────────────────────────
+  # 5. Dependency Audit — npm audit
+  # ─────────────────────────────────────────────
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Check for known vulnerabilities
+        run: |
+          echo "## Dependency Audit Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          pnpm audit --audit-level=moderate 2>&1 | head -100 >> $GITHUB_STEP_SUMMARY || true
+
+  # ─────────────────────────────────────────────
+  # 6. Lint + Type Check
+  # ─────────────────────────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint (with security plugin)
+        run: pnpm -r run lint
+
+      - name: TypeScript type check
+        run: pnpm -r run typecheck
+
+  # ─────────────────────────────────────────────
+  # 7. DAST — OWASP ZAP (full scan)
+  # ─────────────────────────────────────────────
+  dast-zap:
+    name: DAST — OWASP ZAP
+    runs-on: ubuntu-latest
+    needs: [test-coverage, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bmhq
+          POSTGRES_PASSWORD: bmhq_test
+          POSTGRES_DB: bmhq_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install and build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm -r run build
+
+      - name: Start BMHQ Platform
+        run: |
+          cd projects/bmhq-platform
+          pnpm start &
+          sleep 10
+        env:
+          DATABASE_URL: postgresql://bmhq:bmhq_test@localhost:5432/bmhq_test
+          NODE_ENV: test
+          PORT: 3000
+
+      - name: Wait for app to be ready
+        run: |
+          for i in $(seq 1 30); do
+            curl -s http://localhost:3000 > /dev/null && break
+            echo "Waiting for app... ($i)"
+            sleep 2
+          done
+
+      - name: ZAP Full Scan — BMHQ Platform
+        uses: zaproxy/action-full-scan@v0.11.0
+        with:
+          target: http://localhost:3000
+          rules_file_name: '.github/zap-rules.tsv'
+          allow_issue_writing: true
+          fail_action: false
+          artifact_name: zap-report-bmhq
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-full-report
+          path: report_html.html
+          retention-days: 30
+
+  # ─────────────────────────────────────────────
+  # 8. DAST — Nuclei (API-focused scan)
+  # ─────────────────────────────────────────────
+  dast-nuclei:
+    name: DAST — Nuclei API Scan
+    runs-on: ubuntu-latest
+    needs: [test-coverage, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bmhq
+          POSTGRES_PASSWORD: bmhq_test
+          POSTGRES_DB: bmhq_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install and build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm -r run build
+
+      - name: Start Agent OS API
+        run: |
+          cd projects/agent-os
+          pnpm start:api &
+          sleep 10
+        env:
+          DATABASE_URL: postgresql://bmhq:bmhq_test@localhost:5432/bmhq_test
+          NODE_ENV: test
+          PORT: 4000
+
+      - name: Install Nuclei
+        run: |
+          go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      - name: Run Nuclei scan
+        run: |
+          nuclei -u http://localhost:4000 \
+            -t http/ \
+            -t miscellaneous/ \
+            -t token-spray/ \
+            -t exposures/ \
+            -severity low,medium,high,critical \
+            -json-export nuclei-results.json \
+            -markdown-export nuclei-report.md \
+            || true
+
+      - name: Upload Nuclei report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuclei-report
+          path: |
+            nuclei-results.json
+            nuclei-report.md
+          retention-days: 30
+
+  # ─────────────────────────────────────────────
+  # 9. Security Summary
+  # ─────────────────────────────────────────────
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [test-coverage, codeql, semgrep, secrets-scan, dependency-audit, lint]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🔒 Security & Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests & Coverage | ${{ needs.test-coverage.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeQL SAST | ${{ needs.codeql.result == 'success' && '✅ Clean' || '⚠️ Check alerts' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Semgrep SAST | ${{ needs.semgrep.result == 'success' && '✅ Clean' || '⚠️ Check findings' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secrets Scan | ${{ needs.secrets-scan.result == 'success' && '✅ No leaks' || '🚨 Secrets found!' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Audit | ${{ needs.dependency-audit.result == 'success' && '✅ Clean' || '⚠️ Vulnerabilities' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint & Types | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Errors' }} |" >> $GITHUB_STEP_SUMMARY

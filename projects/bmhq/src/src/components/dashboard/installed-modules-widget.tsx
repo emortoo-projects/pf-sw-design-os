@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 interface InstalledModule {
@@ -15,17 +14,19 @@ interface InstalledModule {
 
 function ModuleLink({ module }: { module: InstalledModule }) {
   return (
-    <div className="flex items-center justify-between py-2">
+    <div className="flex items-center justify-between py-2 px-1 rounded-md hover:bg-white/[0.02] transition-colors duration-150">
       <div className="flex items-center gap-3 min-w-0">
-        <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+        <div className="h-7 w-7 rounded-md bg-white/[0.06] flex items-center justify-center text-[10px] font-semibold text-white/50 shrink-0">
           {module.moduleName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{module.moduleName}</p>
-          <p className="text-xs text-muted-foreground">v{module.version}</p>
+          <p className="text-[13px] font-medium text-white/70 truncate">
+            {module.moduleName}
+          </p>
+          <p className="text-[11px] text-white/30">v{module.version}</p>
         </div>
       </div>
-      <Badge variant={module.isEnabled ? "default" : "secondary"}>
+      <Badge className={module.isEnabled ? "text-white/60" : "text-white/30"}>
         {module.isEnabled ? "Active" : "Disabled"}
       </Badge>
     </div>
@@ -38,21 +39,19 @@ export function InstalledModulesWidget({
   modules: InstalledModule[];
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Installed Modules</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {modules.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No modules installed</p>
-        ) : (
-          <div className="divide-y">
-            {modules.map((mod) => (
-              <ModuleLink key={mod.id} module={mod} />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="rounded-lg border border-[#1A1A1A] bg-[#111111] p-4">
+      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-3">
+        Installed Modules
+      </h3>
+      {modules.length === 0 ? (
+        <p className="text-[13px] text-white/30">No modules installed</p>
+      ) : (
+        <div className="space-y-0">
+          {modules.map((mod) => (
+            <ModuleLink key={mod.id} module={mod} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

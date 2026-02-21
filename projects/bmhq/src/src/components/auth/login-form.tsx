@@ -53,7 +53,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
         />
       </div>
       {error && (
-        <p className="text-sm text-error-500">{error}</p>
+        <p className="text-[13px] text-white/40">{error}</p>
       )}
       <Button
         type="submit"

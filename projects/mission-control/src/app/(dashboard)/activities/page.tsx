@@ -32,15 +32,26 @@ const typeLabels: Record<ActivityType, string> = {
   manual: "Manual",
 };
 
+const mockActivities: Activity[] = [
+  { id: "act-1", agentId: "ag1", agentName: "Research Bot", type: "agent_run", status: "completed", input: { query: "market analysis Q1 2026" }, output: { summary: "Report generated", pages: 12 }, duration: 45200, cost: "0.82", createdAt: "2026-02-21T14:32:00Z" },
+  { id: "act-2", agentId: "ag2", agentName: "Code Review", type: "job_execution", status: "running", input: { repo: "frontend-app", pr: 142 }, output: null, duration: null, cost: "0.35", createdAt: "2026-02-21T14:28:00Z" },
+  { id: "act-3", agentId: "ag3", agentName: "Data Extractor", type: "agent_run", status: "completed", input: { source: "salesforce", records: 500 }, output: { extracted: 487, errors: 13 }, duration: 12800, cost: "0.18", createdAt: "2026-02-21T14:15:00Z" },
+  { id: "act-4", agentId: "ag4", agentName: "Email Summarizer", type: "webhook_delivery", status: "failed", input: { emails: 25 }, output: null, duration: 3200, cost: "0.04", createdAt: "2026-02-21T13:55:00Z" },
+  { id: "act-5", agentId: "ag5", agentName: "Report Writer", type: "agent_run", status: "pending", input: { template: "quarterly-review" }, output: null, duration: null, cost: null, createdAt: "2026-02-21T13:40:00Z" },
+  { id: "act-6", agentId: "ag6", agentName: "Customer Support", type: "agent_run", status: "completed", input: { tickets: 8 }, output: { resolved: 6, escalated: 2 }, duration: 28400, cost: "0.52", createdAt: "2026-02-21T13:20:00Z" },
+  { id: "act-7", agentId: "ag1", agentName: "Research Bot", type: "manual", status: "completed", input: { topic: "competitor pricing" }, output: { findings: 15 }, duration: 62100, cost: "1.14", createdAt: "2026-02-21T12:45:00Z" },
+  { id: "act-8", agentId: "ag7", agentName: "Slack Notifier", type: "webhook_delivery", status: "completed", input: { channel: "#ops-alerts" }, output: { delivered: true }, duration: 820, cost: "0.01", createdAt: "2026-02-21T12:30:00Z" },
+  { id: "act-9", agentId: "ag2", agentName: "Code Review", type: "job_execution", status: "completed", input: { repo: "api-service", pr: 89 }, output: { comments: 4, approved: true }, duration: 34500, cost: "0.67", createdAt: "2026-02-21T11:50:00Z" },
+  { id: "act-10", agentId: "ag3", agentName: "Data Extractor", type: "agent_run", status: "failed", input: { source: "hubspot", records: 1200 }, output: null, duration: 5600, cost: "0.09", createdAt: "2026-02-21T11:15:00Z" },
+];
+
 export default function ActivityTimelinePage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ActivityStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<ActivityType | "all">("all");
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
-  // Placeholder - will be connected to tRPC
-  const activities: Activity[] = [];
-  const loading = false;
+  const activities = mockActivities;
 
   const filteredActivities = activities.filter((activity) => {
     if (statusFilter !== "all" && activity.status !== statusFilter) return false;
@@ -95,13 +106,7 @@ export default function ActivityTimelinePage() {
 
         {/* Activity List */}
         <div className="mt-6">
-          {loading ? (
-            <div className="space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-20 animate-pulse rounded-lg border bg-gray-100" />
-              ))}
-            </div>
-          ) : filteredActivities.length === 0 ? (
+          {filteredActivities.length === 0 ? (
             <div className="rounded-lg border bg-white px-6 py-12 text-center">
               <p className="text-sm text-gray-500">No activities found</p>
             </div>
@@ -125,7 +130,7 @@ export default function ActivityTimelinePage() {
                         <span className="text-sm text-gray-500">${activity.cost}</span>
                       )}
                       {activity.duration && (
-                        <span className="text-sm text-gray-500">{activity.duration}ms</span>
+                        <span className="text-sm text-gray-500">{(activity.duration / 1000).toFixed(1)}s</span>
                       )}
                       <span
                         className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[activity.status]}`}
@@ -175,6 +180,18 @@ export default function ActivityTimelinePage() {
                     {selectedActivity.status}
                   </span>
                 </div>
+                {selectedActivity.duration && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500">Duration</label>
+                    <p className="text-sm text-gray-900">{(selectedActivity.duration / 1000).toFixed(1)}s</p>
+                  </div>
+                )}
+                {selectedActivity.cost && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500">Cost</label>
+                    <p className="text-sm text-gray-900">${selectedActivity.cost}</p>
+                  </div>
+                )}
                 {selectedActivity.input && (
                   <div>
                     <label className="text-xs font-medium text-gray-500">Input</label>

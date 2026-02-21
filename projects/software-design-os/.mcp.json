@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "sdos": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["src/apps/mcp/dist/stdio.js"],
+      "env": {
+        "SDP_TOKEN": "sdp_live_8eee23b397ab62da3749d813bf19157472e680e81f9e9f5c",
+        "DATABASE_URL": "postgresql://sdos:sdos_local@localhost:5432/sdos"
+      }
+    }
+  }
+}

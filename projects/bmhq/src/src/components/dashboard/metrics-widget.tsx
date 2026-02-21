@@ -1,12 +1,5 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
 interface Metric {
   label: string;
   value: string | number;
@@ -19,23 +12,25 @@ export function MetricsWidget({
   metrics: Metric[];
 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {metrics.map((metric) => (
-        <Card key={metric.label}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {metric.label}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metric.value}</div>
-            {metric.description && (
-              <p className="text-xs text-muted-foreground">
-                {metric.description}
-              </p>
-            )}
-          </CardContent>
-        </Card>
+    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+      {metrics.map((metric, i) => (
+        <div
+          key={metric.label}
+          className="rounded-lg border border-[#1A1A1A] bg-[#111111] p-4"
+          style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
+            {metric.label}
+          </p>
+          <p className="text-[24px] font-semibold font-mono text-white/90 mt-1">
+            {metric.value}
+          </p>
+          {metric.description && (
+            <p className="text-[11px] text-white/30 mt-0.5">
+              {metric.description}
+            </p>
+          )}
+        </div>
       ))}
     </div>
   );

@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "bmhq": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "projects/software-design-os/src/apps/mcp/src/stdio.ts"],
+      "env": {
+        "SDP_TOKEN": "sdp_live_970c7adcb3a1981d330d34c82ddff90d418b574804334e73",
+        "DATABASE_URL": "postgres://sdos:sdos_dev@localhost:5432/sdos"
+      }
+    },
+    "mission-control": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "projects/software-design-os/src/apps/mcp/src/stdio.ts"],
+      "env": {
+        "SDP_TOKEN": "sdp_live_8eee23b397ab62da3749d813bf19157472e680e81f9e9f5c",
+        "DATABASE_URL": "postgres://sdos:sdos_dev@localhost:5432/sdos"
+      }
+    }
+  }
+}

@@ -41,6 +41,19 @@ const providerColors: Record<ProviderType, string> = {
   custom: "bg-gray-100 text-gray-800",
 };
 
+const mockAgents: Agent[] = [
+  { id: "ag1", name: "Research Bot", description: "Performs deep market research and competitive analysis using web search and document analysis", provider: "claude", model: "claude-sonnet-4-5", systemPrompt: "You are a market research analyst...", configuration: { maxTokens: 4096, temperature: 0.3 }, version: 3, status: "active", createdAt: "2026-01-15T10:00:00Z", updatedAt: "2026-02-20T14:30:00Z" },
+  { id: "ag2", name: "Code Review", description: "Automated code review agent for pull requests with security and quality checks", provider: "claude", model: "claude-opus-4", systemPrompt: "You are an expert code reviewer...", configuration: { maxTokens: 8192, temperature: 0.1 }, version: 5, status: "active", createdAt: "2026-01-20T09:00:00Z", updatedAt: "2026-02-21T10:15:00Z" },
+  { id: "ag3", name: "Data Extractor", description: "Extracts structured data from CRM systems and APIs", provider: "openai", model: "gpt-4-turbo", systemPrompt: "You are a data extraction specialist...", configuration: { maxTokens: 2048, temperature: 0.0 }, version: 2, status: "active", createdAt: "2026-02-01T08:00:00Z", updatedAt: "2026-02-18T16:45:00Z" },
+  { id: "ag4", name: "Email Summarizer", description: "Summarizes email threads and generates digest reports", provider: "openai", model: "gpt-4o-mini", systemPrompt: null, configuration: null, version: 1, status: "paused", createdAt: "2026-02-05T11:00:00Z", updatedAt: "2026-02-21T13:55:00Z" },
+  { id: "ag5", name: "Report Writer", description: "Generates formatted business reports from raw data and templates", provider: "claude", model: "claude-sonnet-4-5", systemPrompt: "You are a professional report writer...", configuration: { maxTokens: 16384, temperature: 0.5 }, version: 2, status: "active", createdAt: "2026-01-25T14:00:00Z", updatedAt: "2026-02-19T09:20:00Z" },
+  { id: "ag6", name: "Customer Support", description: "Handles tier-1 support tickets with auto-triage and response generation", provider: "claude", model: "claude-haiku-4-5", systemPrompt: "You are a helpful customer support agent...", configuration: { maxTokens: 2048, temperature: 0.2 }, version: 4, status: "active", createdAt: "2026-01-10T08:00:00Z", updatedAt: "2026-02-21T13:20:00Z" },
+  { id: "ag7", name: "Translation Agent", description: "Translates documentation and content between languages", provider: "deepseek", model: "deepseek-v3", systemPrompt: null, configuration: null, version: 1, status: "active", createdAt: "2026-02-10T10:00:00Z", updatedAt: "2026-02-19T11:30:00Z" },
+  { id: "ag8", name: "Slack Notifier", description: "Dispatches formatted notifications to Slack channels", provider: "custom", model: "internal-v1", systemPrompt: null, configuration: { webhookUrl: "https://hooks.slack.com/..." }, version: 1, status: "active", createdAt: "2026-02-12T09:00:00Z", updatedAt: "2026-02-21T12:30:00Z" },
+  { id: "ag9", name: "Ops Monitor", description: "Monitors infrastructure health and database backup status", provider: "openai", model: "gpt-4o", systemPrompt: "You are a DevOps monitoring agent...", configuration: { maxTokens: 1024, temperature: 0.0 }, version: 2, status: "active", createdAt: "2026-01-08T08:00:00Z", updatedAt: "2026-02-21T06:00:00Z" },
+  { id: "ag10", name: "Legacy Classifier", description: "Old document classification agent (deprecated)", provider: "openrouter", model: "meta-llama/llama-3-70b", systemPrompt: null, configuration: null, version: 1, status: "archived", createdAt: "2025-11-20T10:00:00Z", updatedAt: "2026-01-05T14:00:00Z" },
+];
+
 export default function AgentRegistryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -54,9 +67,7 @@ export default function AgentRegistryPage() {
     systemPrompt: "",
   });
 
-  // Placeholder data - will be connected to tRPC
-  const agents: Agent[] = [];
-  const loading = false;
+  const agents = mockAgents;
 
   const filteredAgents = agents.filter((agent) => {
     if (!searchQuery) return true;
@@ -69,7 +80,6 @@ export default function AgentRegistryPage() {
   });
 
   const handleSubmit = () => {
-    // Will connect to tRPC mutation
     setShowCreateModal(false);
     setFormData({ name: "", description: "", provider: "claude", model: "", systemPrompt: "" });
   };
@@ -106,82 +116,54 @@ export default function AgentRegistryPage() {
 
         {/* Agent Grid */}
         <div className="mt-6">
-          {loading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-48 animate-pulse rounded-lg border bg-gray-100" />
-              ))}
-            </div>
-          ) : filteredAgents.length === 0 ? (
-            <div className="rounded-lg border bg-white px-6 py-12 text-center">
-              <p className="text-sm text-gray-500">
-                {searchQuery ? "No agents match your search" : "No agents configured"}
-              </p>
-              {!searchQuery && (
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700"
-                >
-                  Create your first agent
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredAgents.map((agent) => (
-                <div
-                  key={agent.id}
-                  className="cursor-pointer rounded-lg border bg-white p-5 shadow-sm transition hover:shadow-md"
-                  onClick={() => {
-                    setSelectedAgent(agent);
-                    setShowDetailPanel(true);
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{agent.name}</h3>
-                      {agent.description && (
-                        <p className="mt-1 text-xs text-gray-500 line-clamp-2">{agent.description}</p>
-                      )}
-                    </div>
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[agent.status]}`}>
-                      {agent.status}
-                    </span>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredAgents.map((agent) => (
+              <div
+                key={agent.id}
+                className="cursor-pointer rounded-lg border bg-white p-5 shadow-sm transition hover:shadow-md"
+                onClick={() => {
+                  setSelectedAgent(agent);
+                  setShowDetailPanel(true);
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-medium text-gray-900">{agent.name}</h3>
+                    {agent.description && (
+                      <p className="mt-1 text-xs text-gray-500 line-clamp-2">{agent.description}</p>
+                    )}
                   </div>
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${providerColors[agent.provider]}`}>
-                      {agent.provider}
-                    </span>
-                    <span className="text-xs text-gray-500">{agent.model}</span>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
-                    <span>v{agent.version}</span>
-                    <span>{new Date(agent.updatedAt).toLocaleDateString()}</span>
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Clone agent - will connect to tRPC
-                      }}
-                      className="rounded border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                    >
-                      Clone
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Delete agent - will connect to tRPC
-                      }}
-                      className="rounded border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[agent.status]}`}>
+                    {agent.status}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="mt-4 flex items-center gap-2">
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${providerColors[agent.provider]}`}>
+                    {agent.provider}
+                  </span>
+                  <span className="text-xs text-gray-500">{agent.model}</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
+                  <span>v{agent.version}</span>
+                  <span>{new Date(agent.updatedAt).toLocaleDateString()}</span>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); }}
+                    className="rounded border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                  >
+                    Clone
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); }}
+                    className="rounded border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Create Agent Modal */}

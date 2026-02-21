@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-
-type NotificationType = "info" | "success" | "warning" | "error";
+import { Icons } from "@/components/icons";
 
 interface Notification {
   id: string;
@@ -22,16 +20,6 @@ interface Notification {
   metadata: unknown;
   createdAt: Date;
 }
-
-const TYPE_STYLES: Record<
-  NotificationType,
-  { bg: string; text: string; label: string; badge: "default" | "secondary" | "destructive" | "outline" }
-> = {
-  info: { bg: "bg-primary-100", text: "text-primary-700", label: "i", badge: "default" },
-  success: { bg: "bg-success-100", text: "text-success-700", label: "✓", badge: "default" },
-  warning: { bg: "bg-warning-100", text: "text-warning-700", label: "!", badge: "secondary" },
-  error: { bg: "bg-error-100", text: "text-error-700", label: "✕", badge: "destructive" },
-};
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -99,159 +87,135 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-heading font-bold">Notifications</h1>
-            <p className="text-sm text-muted-foreground">
-              {unreadCount > 0
-                ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
-                : "All caught up"}
-            </p>
-          </div>
-          {unreadCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={markAllReadMutation.isPending}
-              onClick={() => markAllReadMutation.mutate({})}
-            >
-              Mark all as read
-            </Button>
-          )}
+    <div className="animate-fade-up" style={{ animationFillMode: "both" }}>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-[11px] text-white/30">
+            {unreadCount > 0
+              ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
+              : "All caught up"}
+          </p>
         </div>
-      </header>
+        {unreadCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={markAllReadMutation.isPending}
+            onClick={() => markAllReadMutation.mutate({})}
+          >
+            Mark all as read
+          </Button>
+        )}
+      </div>
 
       <div className="flex">
         {/* Filter sidebar */}
-        <aside className="w-48 border-r p-4 space-y-1 shrink-0">
+        <aside className="w-40 pr-4 border-r border-[#1A1A1A] space-y-0.5 shrink-0">
           {FILTERS.map((f) => (
-            <Button
+            <button
               key={f.id}
-              variant={filter === f.id ? "secondary" : "ghost"}
-              size="sm"
-              className="w-full justify-start"
+              className={`w-full text-left flex items-center justify-between px-3 h-8 rounded-md text-[13px] transition-colors duration-150 ${
+                filter === f.id
+                  ? "bg-white/[0.06] text-white/90"
+                  : "text-white/40 hover:text-white/60 hover:bg-white/[0.03]"
+              }`}
               onClick={() => setFilter(f.id)}
             >
-              {f.label}
+              <span>{f.label}</span>
               {f.id === "unread" && unreadCount > 0 && (
-                <Badge variant="default" className="ml-auto text-xs">
+                <Badge className="text-white/50 text-[10px]">
                   {unreadCount}
                 </Badge>
               )}
-            </Button>
+            </button>
           ))}
         </aside>
 
         {/* Notifications list */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 pl-6">
           {notificationsQuery.isLoading ? (
-            <p className="text-muted-foreground">Loading notifications...</p>
+            <p className="text-[13px] text-white/40">Loading notifications...</p>
           ) : filteredNotifications.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-lg mb-3">
-                  🔔
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {filter === "all"
-                    ? "No notifications yet"
-                    : `No ${filter} notifications`}
-                </p>
-              </CardContent>
-            </Card>
+            <div className="rounded-lg border border-[#1A1A1A] bg-[#111111] flex flex-col items-center justify-center py-12">
+              <Icons.notifications className="w-6 h-6 text-white/20 mb-3" />
+              <p className="text-[13px] text-white/30">
+                {filter === "all"
+                  ? "No notifications yet"
+                  : `No ${filter} notifications`}
+              </p>
+            </div>
           ) : (
-            <div className="space-y-2">
-              {filteredNotifications.map((notification) => {
-                const typeStyle =
-                  TYPE_STYLES[notification.type as NotificationType] ??
-                  TYPE_STYLES.info;
-
-                return (
-                  <Card
-                    key={notification.id}
-                    className={`cursor-pointer transition-shadow hover:shadow-md ${
-                      !notification.isRead ? "border-primary-200" : ""
-                    }`}
-                    onClick={() => handleClick(notification)}
-                  >
-                    <CardContent className="flex items-start gap-4 py-4">
-                      {/* Type icon */}
-                      <div
-                        className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${typeStyle.bg} ${typeStyle.text}`}
-                      >
-                        {typeStyle.label}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p
-                                className={`text-sm ${
-                                  !notification.isRead ? "font-medium" : ""
-                                }`}
-                              >
-                                {notification.title}
-                              </p>
-                              <Badge
-                                variant={typeStyle.badge}
-                                className="text-xs capitalize"
-                              >
-                                {notification.type}
-                              </Badge>
-                              {!notification.isRead && (
-                                <div className="h-2 w-2 rounded-full bg-primary-500" />
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {notification.message}
+            <div className="space-y-1">
+              {filteredNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`rounded-lg border border-[#1A1A1A] bg-[#111111] cursor-pointer transition-colors duration-150 hover:bg-white/[0.03] ${
+                    !notification.isRead ? "bg-white/[0.02]" : ""
+                  }`}
+                  onClick={() => handleClick(notification)}
+                >
+                  <div className="flex items-start gap-3 p-4">
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`text-[13px] ${
+                                !notification.isRead
+                                  ? "font-medium text-white/90"
+                                  : "text-white/50"
+                              }`}
+                            >
+                              {notification.title}
                             </p>
+                            <Badge className="text-white/30 capitalize">
+                              {notification.type}
+                            </Badge>
                           </div>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {formatRelativeTime(notification.createdAt)}
-                          </span>
+                          <p className="text-[13px] text-white/30 mt-0.5">
+                            {notification.message}
+                          </p>
                         </div>
+                        <span className="text-[11px] text-white/20 whitespace-nowrap">
+                          {formatRelativeTime(notification.createdAt)}
+                        </span>
                       </div>
+                    </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        {!notification.isRead && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              markReadMutation.mutate({
-                                notificationId: notification.id,
-                                isRead: true,
-                              });
-                            }}
-                          >
-                            Read
-                          </Button>
-                        )}
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!notification.isRead && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs text-error-500"
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteMutation.mutate({
+                            markReadMutation.mutate({
                               notificationId: notification.id,
+                              isRead: true,
                             });
                           }}
                         >
-                          Delete
+                          Read
                         </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteMutation.mutate({
+                            notificationId: notification.id,
+                          });
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </main>

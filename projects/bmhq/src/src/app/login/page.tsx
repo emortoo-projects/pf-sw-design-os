@@ -22,10 +22,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] px-4">
+      <Card className="w-full max-w-md animate-fade-up" style={{ animationFillMode: "both" }}>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-heading">BMHQ</CardTitle>
+          <CardTitle className="text-[18px] font-semibold">BMHQ</CardTitle>
           <CardDescription>
             {tab === "login"
               ? "Sign in to your account"

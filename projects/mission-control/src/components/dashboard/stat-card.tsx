@@ -11,15 +11,15 @@ export function StatCard({ label, value, trend, icon }: StatCardProps) {
   return (
     <div className="rounded-lg border bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-500">{label}</span>
-        <span className="text-gray-400">{icon}</span>
+        <span className="text-sm font-medium text-neutral-500">{label}</span>
+        <span className="text-neutral-400">{icon}</span>
       </div>
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-2xl font-semibold text-gray-900">{value}</span>
+        <span className="text-2xl font-semibold text-neutral-900">{value}</span>
         {trend && (
           <span
             className={`text-xs font-medium ${
-              trend.direction === "up" ? "text-green-600" : "text-red-600"
+              trend.direction === "up" ? "text-success-600" : "text-error-600"
             }`}
           >
             {trend.direction === "up" ? "+" : "-"}{trend.value}%

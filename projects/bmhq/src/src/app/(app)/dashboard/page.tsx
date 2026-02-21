@@ -7,7 +7,6 @@ import { MetricsWidget } from "@/components/dashboard/metrics-widget";
 import { ActivityWidget } from "@/components/dashboard/activity-widget";
 import { InstalledModulesWidget } from "@/components/dashboard/installed-modules-widget";
 import { AIUsageWidget } from "@/components/dashboard/ai-usage-widget";
-import { Separator } from "@/components/ui/separator";
 
 export default function DashboardPage() {
   const [orgId, setOrgId] = useState<string>("");
@@ -15,7 +14,6 @@ export default function DashboardPage() {
   const orgsQuery = trpc.organizations.list.useQuery({});
   const organizations = orgsQuery.data?.data ?? [];
 
-  // Auto-select first org
   const currentOrgId = orgId || organizations[0]?.id || "";
 
   const dashboardQuery = trpc.dashboard.get.useQuery(
@@ -26,75 +24,61 @@ export default function DashboardPage() {
   const data = dashboardQuery.data;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">
-              Overview of your organization
-            </p>
-          </div>
-          <OrganizationSwitcher
-            organizations={organizations}
-            currentOrgId={currentOrgId}
-            onChange={setOrgId}
+    <div className="animate-fade-up" style={{ animationFillMode: "both" }}>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-[13px] font-semibold text-white/90">Overview</h2>
+        <OrganizationSwitcher
+          organizations={organizations}
+          currentOrgId={currentOrgId}
+          onChange={setOrgId}
+        />
+      </div>
+
+      {orgsQuery.isLoading || dashboardQuery.isLoading ? (
+        <p className="text-[13px] text-white/40">Loading dashboard...</p>
+      ) : data ? (
+        <div className="space-y-3">
+          <MetricsWidget
+            metrics={[
+              {
+                label: "Team Members",
+                value: data.metrics.memberCount,
+                description: "Active members",
+              },
+              {
+                label: "Installed Modules",
+                value: data.metrics.installedModuleCount,
+                description: "Enabled modules",
+              },
+              {
+                label: "AI Requests",
+                value: data.metrics.aiUsage.totalRequests,
+                description: "Total API calls",
+              },
+              {
+                label: "AI Cost",
+                value: `$${data.metrics.aiUsage.totalCost.toFixed(2)}`,
+                description: "Estimated spend",
+              },
+            ]}
           />
-        </div>
-      </header>
 
-      <main className="p-6 space-y-6">
-        {!currentOrgId ? (
-          <p className="text-muted-foreground">
-            No organization found. Create one to get started.
-          </p>
-        ) : dashboardQuery.isLoading ? (
-          <p className="text-muted-foreground">Loading dashboard...</p>
-        ) : dashboardQuery.isError ? (
-          <p className="text-sm text-error-500">
-            Failed to load dashboard data
-          </p>
-        ) : data ? (
-          <>
-            <MetricsWidget
-              metrics={[
-                {
-                  label: "Team Members",
-                  value: data.metrics.memberCount,
-                  description: "Active members in organization",
-                },
-                {
-                  label: "Installed Modules",
-                  value: data.metrics.installedModuleCount,
-                  description: "Enabled modules",
-                },
-                {
-                  label: "AI Requests",
-                  value: data.metrics.aiUsage.totalRequests,
-                  description: "Total API calls",
-                },
-                {
-                  label: "AI Cost",
-                  value: `$${data.metrics.aiUsage.totalCost.toFixed(2)}`,
-                  description: "Estimated total spend",
-                },
-              ]}
-            />
-
-            <Separator />
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <ActivityWidget activities={data.recentActivity} />
-              </div>
-              <div className="space-y-6">
-                <AIUsageWidget usage={data.metrics.aiUsage} />
-                <InstalledModulesWidget modules={data.installedModules} />
-              </div>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <ActivityWidget activities={data.recentActivity} />
             </div>
-          </>
-        ) : null}
-      </main>
+            <div className="space-y-3">
+              <AIUsageWidget usage={data.metrics.aiUsage} />
+              <InstalledModulesWidget modules={data.installedModules} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-[13px] text-white/30">
+          No data available yet. The dashboard will populate once your
+          organization is set up.
+        </p>
+      )}
     </div>
   );
 }

@@ -30,21 +30,35 @@ const statusColors: Record<JobStatus, string> = {
 
 const statusTabs: JobStatus[] = ["pending", "queued", "running", "completed", "failed", "cancelled", "paused"];
 
+const mockJobs: Job[] = [
+  { id: "j1", name: "Research: Market Analysis", description: "Weekly market analysis report generation", agentId: "ag1", type: "scheduled", status: "running", priority: 2, lastRunAt: "2026-02-21T14:00:00Z", nextRunAt: null, createdAt: "2026-02-14T10:00:00Z" },
+  { id: "j2", name: "Code Review: PR #142", description: "Automated code review for frontend PR", agentId: "ag2", type: "triggered", status: "running", priority: 1, lastRunAt: "2026-02-21T14:28:00Z", nextRunAt: null, createdAt: "2026-02-21T14:28:00Z" },
+  { id: "j3", name: "Data Sync: Salesforce", description: "Extract and sync CRM records", agentId: "ag3", type: "scheduled", status: "queued", priority: 0, lastRunAt: "2026-02-21T12:00:00Z", nextRunAt: "2026-02-21T15:00:00Z", createdAt: "2026-02-10T09:00:00Z" },
+  { id: "j4", name: "Email Digest Generation", description: "Generate daily email digest summary", agentId: "ag4", type: "scheduled", status: "pending", priority: 0, lastRunAt: "2026-02-20T18:00:00Z", nextRunAt: "2026-02-21T18:00:00Z", createdAt: "2026-02-01T08:00:00Z" },
+  { id: "j5", name: "Quarterly Report", description: "Generate Q1 quarterly business report", agentId: "ag5", type: "manual", status: "pending", priority: 3, lastRunAt: null, nextRunAt: null, createdAt: "2026-02-21T13:40:00Z" },
+  { id: "j6", name: "Support Ticket Triage", description: "Auto-triage incoming support tickets", agentId: "ag6", type: "triggered", status: "completed", priority: 1, lastRunAt: "2026-02-21T13:20:00Z", nextRunAt: null, createdAt: "2026-02-21T13:15:00Z" },
+  { id: "j7", name: "Competitor Price Monitor", description: "Track competitor pricing changes", agentId: "ag1", type: "scheduled", status: "completed", priority: 0, lastRunAt: "2026-02-21T12:45:00Z", nextRunAt: "2026-02-22T12:00:00Z", createdAt: "2026-02-05T10:00:00Z" },
+  { id: "j8", name: "HubSpot Data Extract", description: "Extract contacts from HubSpot CRM", agentId: "ag3", type: "scheduled", status: "failed", priority: 0, lastRunAt: "2026-02-21T11:15:00Z", nextRunAt: "2026-02-21T15:15:00Z", createdAt: "2026-02-08T11:00:00Z" },
+  { id: "j9", name: "Translation Batch", description: "Translate documentation to 5 languages", agentId: "ag7", type: "manual", status: "paused", priority: 0, lastRunAt: "2026-02-20T16:30:00Z", nextRunAt: null, createdAt: "2026-02-20T14:00:00Z" },
+  { id: "j10", name: "Slack Alert Dispatch", description: "Send ops alerts to Slack channels", agentId: "ag8", type: "triggered", status: "completed", priority: 1, lastRunAt: "2026-02-21T12:30:00Z", nextRunAt: null, createdAt: "2026-02-21T12:30:00Z" },
+  { id: "j11", name: "Nightly DB Backup Check", description: "Verify nightly database backup completed", agentId: "ag9", type: "scheduled", status: "completed", priority: 0, lastRunAt: "2026-02-21T06:00:00Z", nextRunAt: "2026-02-22T06:00:00Z", createdAt: "2026-01-15T10:00:00Z" },
+  { id: "j12", name: "Old Job Cleanup", description: "Clean up completed jobs older than 30 days", agentId: "ag9", type: "scheduled", status: "cancelled", priority: 0, lastRunAt: "2026-02-15T04:00:00Z", nextRunAt: null, createdAt: "2026-01-10T08:00:00Z" },
+];
+
 export default function TaskQueuePage() {
   const [activeStatus, setActiveStatus] = useState<JobStatus>("running");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
-  // Placeholder data - will be connected to tRPC
-  const jobs: Job[] = [];
-  const loading = false;
+  const jobs = mockJobs;
+
   const statusCounts: Record<JobStatus, number> = {
-    pending: 0,
-    queued: 0,
-    running: 0,
-    completed: 0,
-    failed: 0,
-    cancelled: 0,
-    paused: 0,
+    pending: jobs.filter((j) => j.status === "pending").length,
+    queued: jobs.filter((j) => j.status === "queued").length,
+    running: jobs.filter((j) => j.status === "running").length,
+    completed: jobs.filter((j) => j.status === "completed").length,
+    failed: jobs.filter((j) => j.status === "failed").length,
+    cancelled: jobs.filter((j) => j.status === "cancelled").length,
+    paused: jobs.filter((j) => j.status === "paused").length,
   };
 
   const filteredJobs = jobs.filter((j) => j.status === activeStatus);
@@ -64,12 +78,7 @@ export default function TaskQueuePage() {
               Visual queue manager showing pending, running, and completed jobs
             </p>
           </div>
-          <button
-            onClick={() => {
-              // Will trigger refetch
-            }}
-            className="rounded-md border bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
+          <button className="rounded-md border bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
             Refresh
           </button>
         </div>
@@ -114,13 +123,7 @@ export default function TaskQueuePage() {
 
         {/* Queue List */}
         <div className="mt-6">
-          {loading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-16 animate-pulse rounded-lg border bg-gray-100" />
-              ))}
-            </div>
-          ) : filteredJobs.length === 0 ? (
+          {filteredJobs.length === 0 ? (
             <div className="rounded-lg border bg-white px-6 py-12 text-center">
               <div className="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
                 <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

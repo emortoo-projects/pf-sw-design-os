@@ -1,0 +1,10 @@
+{
+  "/(dashboard)/page": "app/(dashboard)/page.js",
+  "/(dashboard)/activities/page": "app/(dashboard)/activities/page.js",
+  "/(dashboard)/costs/page": "app/(dashboard)/costs/page.js",
+  "/(dashboard)/scheduler/page": "app/(dashboard)/scheduler/page.js",
+  "/(dashboard)/queue/page": "app/(dashboard)/queue/page.js",
+  "/(dashboard)/agents/page": "app/(dashboard)/agents/page.js",
+  "/(dashboard)/alerts/page": "app/(dashboard)/alerts/page.js",
+  "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js"
+}

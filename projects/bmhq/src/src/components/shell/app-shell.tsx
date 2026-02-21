@@ -1,24 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Icons } from "@/components/icons";
 import { NotificationsPopover } from "@/components/notifications/notifications-popover";
+import { useState } from "react";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/modules", label: "Modules" },
-  { href: "/settings/ai", label: "AI Config" },
+  { href: "/dashboard", label: "Dashboard", icon: Icons.dashboard },
+  { href: "/modules", label: "Modules", icon: Icons.modules },
+  { href: "/settings/ai", label: "AI Config", icon: Icons.aiConfig },
 ];
 
 const FOOTER_NAV = [
-  { href: "/settings", label: "Settings" },
-  { href: "/notifications", label: "Notifications" },
+  { href: "/settings", label: "Settings", icon: Icons.settings },
+  { href: "/notifications", label: "Notifications", icon: Icons.notifications },
 ];
 
 interface AppShellProps {
@@ -27,28 +24,23 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  // Get org context
   const orgsQuery = trpc.organizations.list.useQuery({});
   const currentOrg = orgsQuery.data?.data?.[0];
 
-  // Get installed modules for module switcher
   const installedQuery = trpc.installedModules.list.useQuery(
     { organizationId: currentOrg?.id ?? "" },
     { enabled: !!currentOrg?.id }
   );
   const installedModules = installedQuery.data?.data ?? [];
 
-  // Get notification count
   const notificationsQuery = trpc.notifications.list.useQuery(
     { limit: 1 },
     { refetchInterval: 30000 }
   );
   const unreadCount = notificationsQuery.data?.unreadCount ?? 0;
 
-  // Breadcrumbs from pathname
   const breadcrumbs = pathname
     .split("/")
     .filter(Boolean)
@@ -58,58 +50,54 @@ export function AppShell({ children }: AppShellProps) {
       isLast: i === arr.length - 1,
     }));
 
+  const lastBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
+
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
-      <aside
-        className={`border-r bg-background flex flex-col shrink-0 transition-all duration-200 ${
-          collapsed ? "w-14" : "w-56"
-        }`}
-      >
+    <div className="flex h-screen overflow-hidden bg-[#0A0A0A]">
+      {/* Sidebar — fixed 190px */}
+      <aside className="w-[190px] shrink-0 flex flex-col border-r border-[#1A1A1A] bg-[#0A0A0A]">
         {/* Logo */}
-        <div className="h-14 flex items-center px-4 border-b">
+        <div className="h-[46px] flex items-center px-4 border-b border-[#1A1A1A]">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded bg-primary-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            <div className="h-5 w-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/80 shrink-0">
               B
             </div>
-            {!collapsed && (
-              <span className="font-heading font-bold text-sm">BMHQ</span>
-            )}
+            <span className="text-[13px] font-semibold text-white/90">BMHQ</span>
           </Link>
         </div>
 
         {/* Main nav */}
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-          {!collapsed && (
-            <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Navigation
-            </p>
-          )}
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/30">
+            Navigation
+          </p>
           {NAV_ITEMS.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + "/");
+            const Icon = item.icon;
             return (
               <Link key={item.href} href={item.href}>
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  size="sm"
-                  className={`w-full ${collapsed ? "justify-center px-0" : "justify-start"}`}
+                <div
+                  className={`flex items-center gap-3 h-8 px-3 rounded-md text-[13px] transition-colors duration-150 ${
+                    isActive
+                      ? "bg-white/[0.06] text-white/90"
+                      : "text-white/40 hover:text-white/60 hover:bg-white/[0.03]"
+                  }`}
                 >
-                  {collapsed ? item.label.charAt(0) : item.label}
-                </Button>
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{item.label}</span>
+                </div>
               </Link>
             );
           })}
 
-          {/* Module switcher */}
-          {installedModules.length > 0 && (
+          {/* Installed modules */}
+          {installedModules.filter((m) => m.isEnabled).length > 0 && (
             <>
-              <Separator className="my-2" />
-              {!collapsed && (
-                <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Installed Modules
-                </p>
-              )}
+              <div className="h-px bg-[#1A1A1A] my-2" />
+              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/30">
+                Modules
+              </p>
               {installedModules
                 .filter((m) => m.isEnabled)
                 .map((mod) => {
@@ -117,19 +105,18 @@ export function AppShell({ children }: AppShellProps) {
                   const isActive = pathname === href;
                   return (
                     <Link key={mod.id} href={href}>
-                      <Button
-                        variant={isActive ? "secondary" : "ghost"}
-                        size="sm"
-                        className={`w-full ${collapsed ? "justify-center px-0" : "justify-start"}`}
+                      <div
+                        className={`flex items-center gap-3 h-8 px-3 rounded-md text-[13px] transition-colors duration-150 ${
+                          isActive
+                            ? "bg-white/[0.06] text-white/90"
+                            : "text-white/40 hover:text-white/60 hover:bg-white/[0.03]"
+                        }`}
                       >
-                        {collapsed ? (
-                          (mod.moduleName ?? "?").charAt(0)
-                        ) : (
-                          <span className="truncate">
-                            {mod.moduleName ?? mod.moduleSlug}
-                          </span>
-                        )}
-                      </Button>
+                        <Icons.module className="w-4 h-4 shrink-0" />
+                        <span className="truncate">
+                          {mod.moduleName ?? mod.moduleSlug}
+                        </span>
+                      </div>
                     </Link>
                   );
                 })}
@@ -138,98 +125,70 @@ export function AppShell({ children }: AppShellProps) {
         </nav>
 
         {/* Footer nav */}
-        <div className="p-2 border-t space-y-1">
+        <div className="px-2 py-2 border-t border-[#1A1A1A] space-y-0.5">
           {FOOTER_NAV.map((item) => {
             const isActive = pathname === item.href;
+            const Icon = item.icon;
             return (
               <Link key={item.href} href={item.href}>
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  size="sm"
-                  className={`w-full ${collapsed ? "justify-center px-0" : "justify-start"}`}
+                <div
+                  className={`flex items-center gap-3 h-8 px-3 rounded-md text-[13px] transition-colors duration-150 ${
+                    isActive
+                      ? "bg-white/[0.06] text-white/90"
+                      : "text-white/40 hover:text-white/60 hover:bg-white/[0.03]"
+                  }`}
                 >
-                  {collapsed ? item.label.charAt(0) : item.label}
-                </Button>
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{item.label}</span>
+                </div>
               </Link>
             );
           })}
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`w-full ${collapsed ? "justify-center px-0" : "justify-start"} text-xs text-muted-foreground`}
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? "→" : "← Collapse"}
-          </Button>
         </div>
       </aside>
 
       {/* Main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="h-14 border-b flex items-center justify-between px-4 shrink-0">
-          <div className="flex items-center gap-3">
-            {/* Breadcrumbs */}
-            <nav className="flex items-center gap-1 text-sm">
-              <Link
-                href="/dashboard"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Home
-              </Link>
-              {breadcrumbs.map((crumb) => (
-                <span key={crumb.href} className="flex items-center gap-1">
-                  <span className="text-muted-foreground">/</span>
-                  {crumb.isLast ? (
-                    <span className="font-medium">{crumb.label}</span>
-                  ) : (
-                    <Link
-                      href={crumb.href}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      {crumb.label}
-                    </Link>
-                  )}
-                </span>
-              ))}
-            </nav>
+        {/* Top bar — 46px */}
+        <header className="h-[46px] border-b border-[#1A1A1A] flex items-center justify-between px-4 shrink-0 bg-[#0A0A0A]">
+          <div className="flex items-center">
+            <span className="text-[13px] font-semibold text-white/90">
+              {lastBreadcrumb?.label ?? "Dashboard"}
+            </span>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Global search */}
-            <Input
-              placeholder="Search..."
-              className="w-48 h-8 text-sm"
-              readOnly
-            />
+            {/* Search hint */}
+            <div className="flex items-center gap-2 h-7 px-2.5 rounded-md border border-[#1A1A1A] text-white/30 text-[11px]">
+              <Icons.search className="w-3.5 h-3.5" />
+              <span>Search...</span>
+              <kbd className="ml-1 text-[10px] text-white/20 border border-[#1A1A1A] rounded px-1">
+                /
+              </kbd>
+            </div>
 
             {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="relative"
+            <button
+              className="relative p-1.5 rounded-md text-white/40 hover:text-white/60 hover:bg-white/[0.03] transition-colors duration-150"
               onClick={() => setNotificationsOpen(true)}
             >
-              🔔
+              <Icons.notifications className="w-4 h-4" />
               {unreadCount > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
-                >
+                <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 flex items-center justify-center rounded-full bg-white text-black text-[9px] font-bold">
                   {unreadCount > 9 ? "9+" : unreadCount}
-                </Badge>
+                </span>
               )}
-            </Button>
+            </button>
 
-            {/* User avatar */}
-            <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
+            {/* Avatar */}
+            <div className="h-6 w-6 rounded-md bg-[#111111] border border-[#1A1A1A] flex items-center justify-center text-[10px] font-semibold text-white/50">
               {currentOrg?.name?.charAt(0)?.toUpperCase() ?? "U"}
             </div>
           </div>
         </header>
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        {/* Content area — 24px padding */}
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
 
       {/* Notifications overlay */}

@@ -1,0 +1,80 @@
+# .gitleaks.toml
+# Gitleaks configuration for BMHQ monorepo
+# Docs: https://github.com/gitleaks/gitleaks
+
+title = "BMHQ Gitleaks Config"
+
+# Extend the default ruleset
+[extend]
+useDefault = true
+
+# Paths to ignore (test fixtures, mocks, snapshots)
+[allowlist]
+  paths = [
+    '''(^|/)__tests__/''',
+    '''(^|/)__mocks__/''',
+    '''(^|/)test/fixtures/''',
+    '''(^|/)\.env\.example$''',
+    '''(^|/)\.env\.template$''',
+    '''(^|/)docker-compose\.yml$''',
+    '''(^|/)docker-compose\.dev\.yml$''',
+    '''\.test\.(ts|tsx|js|jsx)$''',
+    '''\.spec\.(ts|tsx|js|jsx)$''',
+    '''\.snap$''',
+    '''pnpm-lock\.yaml$''',
+    '''package-lock\.json$''',
+    '''coverage/''',
+    '''dist/''',
+    '''build/''',
+    '''node_modules/''',
+  ]
+
+  # Regex patterns to allow (non-secrets that trigger false positives)
+  regexes = [
+    '''REPLACE_ME''',
+    '''your-.*-here''',
+    '''example\.com''',
+    '''placeholder''',
+    '''xxxxxxxx''',
+    '''00000000''',
+    '''sk-test-.*''',       # Stripe test keys are okay
+    '''pk-test-.*''',       # Stripe test publishable keys are okay
+  ]
+
+# Custom rules for BMHQ-specific patterns
+[[rules]]
+  id = "bmhq-jwt-secret"
+  description = "BMHQ JWT Secret"
+  regex = '''(?i)(jwt[_-]?secret|session[_-]?secret)\s*[:=]\s*['\"]([^'\"]{8,})['\"]'''
+  tags = ["secret", "jwt"]
+  severity = "high"
+
+[[rules]]
+  id = "bmhq-database-url"
+  description = "Database connection string with credentials"
+  regex = '''postgresql://[^:]+:[^@]+@(?!localhost)'''
+  tags = ["secret", "database"]
+  severity = "critical"
+
+[[rules]]
+  id = "bmhq-api-key-in-code"
+  description = "API key assigned in source code"
+  regex = '''(?i)(api[_-]?key|apikey)\s*[:=]\s*['\"]([a-zA-Z0-9_\-]{20,})['\"]'''
+  tags = ["secret", "api-key"]
+  severity = "high"
+  [rules.allowlist]
+    regexes = ['''process\.env''', '''import\.meta\.env''']
+
+[[rules]]
+  id = "bmhq-stripe-live-key"
+  description = "Stripe live key (not test)"
+  regex = '''sk_live_[a-zA-Z0-9]{20,}'''
+  tags = ["secret", "stripe"]
+  severity = "critical"
+
+[[rules]]
+  id = "bmhq-sendgrid-key"
+  description = "SendGrid API key"
+  regex = '''SG\.[a-zA-Z0-9_\-]{22}\.[a-zA-Z0-9_\-]{43}'''
+  tags = ["secret", "sendgrid"]
+  severity = "critical"

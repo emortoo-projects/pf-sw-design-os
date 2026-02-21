@@ -64,12 +64,12 @@ export function RegisterForm({ onSuccess }: { onSuccess?: () => void }) {
           required
           minLength={8}
         />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[11px] text-white/30">
           Must be at least 8 characters
         </p>
       </div>
       {error && (
-        <p className="text-sm text-error-500">{error}</p>
+        <p className="text-[13px] text-white/40">{error}</p>
       )}
       <Button
         type="submit"

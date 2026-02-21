@@ -1,0 +1,25 @@
+# .github/zap-rules.tsv
+# OWASP ZAP scan rule configuration for BMHQ
+# Format: rule_id	action	(IGNORE, WARN, FAIL)
+# Common false positives for SPAs are set to WARN instead of FAIL
+
+# CSP header — configure properly in production, not a blocker in dev
+10038	WARN
+# X-Content-Type-Options — add to production nginx config
+10021	WARN
+# X-Frame-Options — SPA handles this differently
+10020	WARN
+# Cookie without SameSite — review in production
+10054	WARN
+# Server header disclosure — strip in production reverse proxy
+10036	WARN
+# Timestamp disclosure — common in API responses, not a real vulnerability
+10096	IGNORE
+# Modern web app info — SPA detection, not a vulnerability
+10109	IGNORE
+# User agent fuzzer — expected behavior for API
+10104	IGNORE
+# Re-examine cache control — SPAs handle caching differently
+10015	WARN
+# Permissions policy header — configure in production
+10063	WARN

@@ -5,15 +5,13 @@ import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Icons } from "@/components/icons";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-type NotificationType = "info" | "success" | "warning" | "error";
 
 interface Notification {
   id: string;
@@ -28,13 +26,6 @@ interface Notification {
   metadata: unknown;
   createdAt: Date;
 }
-
-const TYPE_STYLES: Record<NotificationType, { bg: string; text: string; label: string }> = {
-  info: { bg: "bg-primary-100", text: "text-primary-700", label: "i" },
-  success: { bg: "bg-success-100", text: "text-success-700", label: "✓" },
-  warning: { bg: "bg-warning-100", text: "text-warning-700", label: "!" },
-  error: { bg: "bg-error-100", text: "text-error-700", label: "✕" },
-};
 
 function formatRelativeTime(date: Date | string): string {
   const now = Date.now();
@@ -103,9 +94,9 @@ export function NotificationsPopover({
         <DialogHeader className="px-4 pt-4 pb-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <DialogTitle className="text-base">Notifications</DialogTitle>
+              <DialogTitle>Notifications</DialogTitle>
               {unreadCount > 0 && (
-                <Badge variant="default" className="text-xs">
+                <Badge className="text-white/50 text-[10px]">
                   {unreadCount}
                 </Badge>
               )}
@@ -114,7 +105,6 @@ export function NotificationsPopover({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs"
                 disabled={markAllReadMutation.isPending}
                 onClick={() => markAllReadMutation.mutate({})}
               >
@@ -124,79 +114,61 @@ export function NotificationsPopover({
           </div>
         </DialogHeader>
 
-        <Separator className="mt-3" />
+        <div className="h-px bg-[#1A1A1A] mt-3" />
 
         <div className="flex-1 overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-lg mb-3">
-                🔔
-              </div>
-              <p className="text-sm text-muted-foreground">
+              <Icons.notifications className="w-6 h-6 text-white/20 mb-3" />
+              <p className="text-[13px] text-white/30">
                 No notifications yet
               </p>
             </div>
           ) : (
-            <div className="divide-y">
-              {notifications.map((notification) => {
-                const typeStyle =
-                  TYPE_STYLES[notification.type as NotificationType] ??
-                  TYPE_STYLES.info;
-
-                return (
-                  <div
-                    key={notification.id}
-                    className={`flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors ${
-                      !notification.isRead ? "bg-primary-50/50" : ""
-                    }`}
-                    onClick={() => handleClick(notification)}
-                  >
-                    {/* Type icon */}
-                    <div
-                      className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${typeStyle.bg} ${typeStyle.text}`}
-                    >
-                      {typeStyle.label}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p
-                          className={`text-sm leading-tight ${
-                            !notification.isRead ? "font-medium" : ""
-                          }`}
-                        >
-                          {notification.title}
-                        </p>
-                        {!notification.isRead && (
-                          <div className="h-2 w-2 rounded-full bg-primary-500 shrink-0 mt-1" />
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatRelativeTime(notification.createdAt)}
+            <div>
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors duration-150 hover:bg-white/[0.03] ${
+                    !notification.isRead ? "bg-white/[0.02]" : ""
+                  }`}
+                  onClick={() => handleClick(notification)}
+                >
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p
+                        className={`text-[13px] leading-tight ${
+                          !notification.isRead
+                            ? "font-medium text-white/90"
+                            : "text-white/50"
+                        }`}
+                      >
+                        {notification.title}
                       </p>
                     </div>
-
-                    {/* Delete button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0 h-6 w-6 p-0 text-muted-foreground hover:text-error-500"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteMutation.mutate({
-                          notificationId: notification.id,
-                        });
-                      }}
-                    >
-                      ✕
-                    </Button>
+                    <p className="text-[11px] text-white/30 mt-0.5 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <p className="text-[11px] text-white/20 mt-1">
+                      {formatRelativeTime(notification.createdAt)}
+                    </p>
                   </div>
-                );
-              })}
+
+                  {/* Delete button */}
+                  <button
+                    className="shrink-0 h-6 w-6 flex items-center justify-center rounded-md text-white/20 hover:text-white/40 hover:bg-white/[0.04] transition-colors duration-150"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteMutation.mutate({
+                        notificationId: notification.id,
+                      });
+                    }}
+                  >
+                    <Icons.close className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>

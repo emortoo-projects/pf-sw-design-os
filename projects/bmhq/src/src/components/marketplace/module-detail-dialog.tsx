@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 
 interface Module {
@@ -61,7 +60,7 @@ export function ModuleDetailDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-lg font-bold">
+            <div className="h-10 w-10 rounded-md bg-white/[0.06] flex items-center justify-center text-[13px] font-semibold text-white/50">
               {module.name.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -74,40 +73,44 @@ export function ModuleDetailDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <p className="text-sm">{module.description}</p>
+          <p className="text-[13px] text-white/70">{module.description}</p>
 
           {dependencies.length > 0 && (
             <>
-              <Separator />
+              <div className="h-px bg-[#1A1A1A]" />
               <div>
-                <h4 className="text-sm font-medium mb-2">Dependencies</h4>
-                <div className="space-y-1">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-2">
+                  Dependencies
+                </h4>
+                <div className="space-y-1.5">
                   {dependencies.map((dep) => (
                     <div
                       key={dep.id}
-                      className="flex items-center justify-between text-sm"
+                      className="flex items-center justify-between text-[13px]"
                     >
-                      <span>{dep.dependsOnName ?? dep.dependsOnModuleId}</span>
+                      <span className="text-white/70">
+                        {dep.dependsOnName ?? dep.dependsOnModuleId}
+                      </span>
                       <div className="flex items-center gap-2">
                         {dep.minVersion && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[11px] text-white/30">
                             &ge;{dep.minVersion}
                           </span>
                         )}
                         {dep.isOptional && (
-                          <Badge variant="outline" className="text-xs">
-                            Optional
-                          </Badge>
+                          <Badge className="text-white/40">Optional</Badge>
                         )}
-                        {installedModuleIds.has(dep.dependsOnModuleId) ? (
-                          <Badge variant="secondary" className="text-xs">
-                            Installed
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive" className="text-xs">
-                            Missing
-                          </Badge>
-                        )}
+                        <Badge
+                          className={
+                            installedModuleIds.has(dep.dependsOnModuleId)
+                              ? "text-white/60"
+                              : "text-white/30"
+                          }
+                        >
+                          {installedModuleIds.has(dep.dependsOnModuleId)
+                            ? "Installed"
+                            : "Missing"}
+                        </Badge>
                       </div>
                     </div>
                   ))}
@@ -116,7 +119,7 @@ export function ModuleDetailDialog({
             </>
           )}
 
-          <Separator />
+          <div className="h-px bg-[#1A1A1A]" />
 
           <Button
             className="w-full"
@@ -138,7 +141,7 @@ export function ModuleDetailDialog({
           </Button>
 
           {installMutation.isError && (
-            <p className="text-sm text-error-500">
+            <p className="text-[13px] text-white/40">
               {installMutation.error.message}
             </p>
           )}

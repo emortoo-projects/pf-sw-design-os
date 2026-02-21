@@ -1,0 +1,6 @@
+name: "bmhq"
+description: "The unified platform for AI-powered business operations. A modular platform consolidating specialized AI-powered OS modules into a single workspace with shared infrastructure for auth, navigation, billing, and AI configuration."
+stack: "nextjs"
+status: active
+created: "2026-02-20"
+updated: "2026-02-20"
