@@ -1,0 +1,22 @@
+{
+  "name": "agent-os",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "db:generate": "turbo db:generate --filter=@agent-os/database",
+    "db:migrate": "turbo db:migrate --filter=@agent-os/database"
+  },
+  "devDependencies": {
+    "turbo": "^1.13.0",
+    "typescript": "^5.4.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.0",
+    "vitest": "^1.4.0",
+    "@playwright/test": "^1.42.0"
+  }
+}
