@@ -64,7 +64,7 @@ export function SettingsPage() {
                 ))}
               </select>
             </div>
-            {effectiveProjectId && <AutomationSettings projectId={effectiveProjectId} />}
+            {effectiveProjectId && <AutomationSettings key={effectiveProjectId} projectId={effectiveProjectId} />}
           </div>
         )}
 

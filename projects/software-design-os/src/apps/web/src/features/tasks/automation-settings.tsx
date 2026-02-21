@@ -41,9 +41,7 @@ export function AutomationSettings({ projectId }: AutomationSettingsProps) {
   const [protectedPathInput, setProtectedPathInput] = useState('')
 
   useEffect(() => {
-    if (savedConfig) {
-      setConfig(savedConfig)
-    }
+    setConfig(savedConfig ?? DEFAULT_CONFIG)
   }, [savedConfig])
 
   const handleSave = () => {
